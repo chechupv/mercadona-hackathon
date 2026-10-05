@@ -263,6 +263,7 @@ class Interacciones:
                 eventos += self._soltar(persona_id, clase, estado)
 
         estado.en_mano = cantidad
+        estado.ocultos = min(estado.ocultos, estado.en_mano)
         estado.fotogramas = 0
         estado.libres_referencia = self._libres(clase)
         return eventos
@@ -279,6 +280,8 @@ class Interacciones:
         estado_donante.en_mano -= 1
         estado_donante.candidato = estado_donante.en_mano
         estado_donante.fotogramas = 0
+        # Lo que regala ya no lo puede seguir teniendo "oculto" en la mano
+        estado_donante.ocultos = min(estado_donante.ocultos, estado_donante.en_mano)
         # Si el donante también lo había recibido de regalo, el que paga sigue siendo el original
         pagador = estado_donante.regalos.pop() if estado_donante.regalos else donante
         if pagador != persona_id:  # si vuelve a quien lo paga, deja de ser un regalo
