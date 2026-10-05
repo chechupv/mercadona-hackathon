@@ -53,8 +53,8 @@ function App() {
               <button className="menu-card" type="button" onClick={() => setSeccion('compras')}>
                 <span className="menu-card-icon" aria-hidden="true">⌑</span>
                 <span className="menu-card-number">01 · EN DIRECTO</span>
-                <strong>Visualización de compra</strong>
-                <span className="menu-card-description">Consulta las cestas, la actividad y los tickets de compra.</span>
+                <strong>Visualización de sistema</strong>
+                <span className="menu-card-description">Demostración funcionamiento del sistema</span>
                 <span className="menu-card-link">Abrir interfaz <span aria-hidden="true">→</span></span>
               </button>
               <button className="menu-card" type="button" onClick={() => setSeccion('camaras')}>
