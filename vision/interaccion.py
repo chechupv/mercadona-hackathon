@@ -61,6 +61,10 @@ class Interacciones:
 
         return ResultadoFotograma(eventos, self._personas_que_salen(ahora), duenos)
 
+    def personas_en_plano(self) -> list[int]:
+        """Personas vistas hace poco que aún no han salido."""
+        return list(self._ultima_vez)
+
     def _asignar_duenos(self, personas: list[Persona], productos: list[Producto]) -> dict[int, int]:
         """Asigna cada producto a la muñeca más cercana, si está lo bastante cerca."""
         duenos: dict[int, int] = {}

@@ -63,9 +63,22 @@ Todo se ajusta en `config.py`:
 | No detecta que has cogido la botella | Sube `DISTANCIA_MUNECA` o baja `CONFIANZA_PRODUCTO` |
 | Suma una botella que solo está cerca | Baja `DISTANCIA_MUNECA` |
 | Suma y resta solo | Sube `FOTOGRAMAS_COGER` y `FOTOGRAMAS_SOLTAR` |
-| Usar un vídeo grabado en vez de la webcam | `CAMARA = "demo.mp4"` |
-
 Para probar la lógica sin cámara: `python -m unittest test_interaccion`.
+
+### Con vídeos grabados
+
+```bash
+python main.py --elegir                                          # abre una ventana para elegir el vídeo (empieza en Descargas)
+python main.py videos/demo.mp4                                   # procesa el vídeo y lo muestra en la ventana
+python main.py videos/demo.mp4 --guardar salida.mp4              # además guarda el vídeo con los recuadros pintados
+python main.py videos/demo.mp4 --cobrar-al-final                 # al acabar, genera el ticket de quien siga en el plano
+python main.py videos/demo.mp4 --sin-ventana --guardar salida.mp4  # sin ventana, algo más rápido
+```
+
+- El vídeo puede estar en cualquier carpeta. En vez de escribir la ruta, arrastra el archivo a la terminal y se pega solo.
+- Pulsa **Reiniciar demo** en el front antes de cada vídeo: el tracker vuelve a empezar por la persona 1 y se sumaría al carrito anterior.
+- En un vídeo se usa el tiempo del propio vídeo, así que da igual que el ordenador procese más lento o más rápido.
+- Los vídeos (`*.mp4`, `*.mov`…) están en el `.gitignore`: no se suben a GitHub.
 
 ## API
 

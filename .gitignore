@@ -3,6 +3,12 @@
 .env.*
 !.env.example
 
+# Vídeos grabados para probar la visión (pesan demasiado para GitHub)
+*.mp4
+*.mov
+*.avi
+*.mkv
+
 # Base de datos H2 local
 *.mv.db
 *.trace.db
