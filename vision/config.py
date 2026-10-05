@@ -35,6 +35,12 @@ DISTANCIA_MUNECA = 0.15
 FOTOGRAMAS_COGER = 8
 FOTOGRAMAS_SOLTAR = 15
 
+# Para restar, la botella tiene que aparecer SUELTA en la escena (en la mesa).
+# Si solo deja de verse, se asume que la persona se la lleva.
+# Las botellas sueltas se cuentan con la mediana de estos fotogramas, para que un
+# fallo puntual de YOLO no cuente como "ha aparecido una botella".
+VENTANA_LIBRES = 9
+
 # --- Salida de la tienda ---
 # Si una persona desaparece del plano durante estos segundos, se finaliza su compra
 # (POST /api/tickets). Pon FINALIZAR_AL_SALIR = False para desactivarlo.

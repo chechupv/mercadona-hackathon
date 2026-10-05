@@ -54,7 +54,14 @@ Al arrancar descarga los modelos de YOLO (unos 12 MB). Se abre una ventana con:
 - **Puntos azules:** las muñecas.
 - **Recuadro naranja:** un producto en la mano de alguien (`-> P1`). Gris si está suelto.
 
-Cómo decide el +1 y el −1 (`interaccion.py`): si el centro de la botella está cerca de una muñeca durante `FOTOGRAMAS_COGER` fotogramas, suma. Si deja de estarlo durante `FOTOGRAMAS_SOLTAR`, resta. Si la persona desaparece `SEGUNDOS_SALIDA` segundos, se finaliza su compra.
+Cómo decide el +1 y el −1 (`interaccion.py`):
+
+- **Coger (+1):** el centro de la botella está cerca de una muñeca durante `FOTOGRAMAS_COGER` fotogramas.
+- **Dejarla (−1):** la botella ya no está en la mano **y aparece una botella suelta más en la escena** (la ha dejado en la mesa) durante `FOTOGRAMAS_SOLTAR` fotogramas.
+- **Llevársela:** si la botella simplemente deja de verse (la mano la tapa, la persona se gira o sale del plano con ella), sigue en el carrito.
+- **Salir:** si la persona desaparece `SEGUNDOS_SALIDA` segundos, se finaliza su compra. Si dejó algo en la mesa justo antes de irse, se resta antes de generar el ticket.
+
+Para que funcione, **la mesa tiene que verse en el plano**: si la botella se deja fuera de cámara, el sistema cree que se la ha llevado.
 
 Todo se ajusta en `config.py`:
 

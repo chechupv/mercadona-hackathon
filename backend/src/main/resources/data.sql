@@ -3,3 +3,5 @@
 MERGE INTO producto (codigo, nombre, precio) KEY (codigo) VALUES
     ('bottle', 'Agua Solán de cabras 1,5 L', 0.45),
     ('cup', 'Café con leche', 1.20);
+
+--Commit para MVP 1.0
