@@ -35,11 +35,16 @@ def leer_argumentos() -> argparse.Namespace:
     parser.add_argument("--sin-ventana", action="store_true", help="no abre la ventana (va algo más rápido)")
     parser.add_argument("--cobrar-al-final", action="store_true",
                         help="al acabar el vídeo, finaliza la compra de quien siga en el plano")
+    parser.add_argument("--resolucion", type=int, metavar="PX",
+                        help=f"resolución a la que se buscan productos (por defecto {config.TAMANO_IMAGEN}); "
+                             f"súbela a 1280 si los productos salen pequeños")
     return parser.parse_args()
 
 
 def main() -> None:
     args = leer_argumentos()
+    if args.resolucion:
+        config.TAMANO_IMAGEN = args.resolucion
 
     if args.elegir:
         args.fuente = elegir_video()

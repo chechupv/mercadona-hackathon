@@ -18,13 +18,16 @@ def caracteristicas(recorte: np.ndarray) -> np.ndarray:
     """Histograma de color (HSV) de la parte central del producto.
 
     Se descartan los bordes porque ahí suele salir el fondo o la mano que lo sujeta.
+    El brillo casi no cuenta (solo claro/oscuro, y ecualizado) para que el mismo producto
+    se reconozca con luz distinta: lo que manda es el tono y la saturación del color.
     """
     alto, ancho = recorte.shape[:2]
     centro = recorte[int(alto * 0.10):int(alto * 0.90), int(ancho * 0.20):int(ancho * 0.80)]
     if centro.size == 0:
         centro = recorte
     hsv = cv2.cvtColor(centro, cv2.COLOR_BGR2HSV)
-    histograma = cv2.calcHist([hsv], [0, 1, 2], None, [12, 6, 6], [0, 180, 0, 256, 0, 256])
+    hsv[:, :, 2] = cv2.equalizeHist(hsv[:, :, 2])
+    histograma = cv2.calcHist([hsv], [0, 1, 2], None, [12, 6, 2], [0, 180, 0, 256, 0, 256])
     return cv2.normalize(histograma, histograma).flatten()
 
 

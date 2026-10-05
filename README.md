@@ -98,6 +98,8 @@ YOLO llama `bottle` igual al agua, a una cantimplora o a una Coca-Cola. Para dis
 
 Si confunde productos, baja `DISTANCIA_MAXIMA_VARIANTE`; si deja de reconocer alguno cuando está en la mano, súbelo. Para no usar variantes, deja `VARIANTES = {}`.
 
+**Si grabáis en otro sitio o con otra luz** (exterior, fondo blanco, cámara mucho más lejos), el mismo producto puede verse con colores muy distintos y el clasificador lo ignora. Solución: añadid una foto de ejemplo de esa escena con `crear_referencias.py` (un fotograma en que se vea el producto en la mesa). Las fotos nuevas se suman a las que ya hay.
+
 Todo se ajusta en `config.py`:
 
 | Problema | Qué tocar |
@@ -115,6 +117,7 @@ python main.py videos/demo.mp4                                   # procesa el v�
 python main.py videos/demo.mp4 --guardar salida.mp4              # además guarda el vídeo con los recuadros pintados
 python main.py videos/demo.mp4 --cobrar-al-final                 # al acabar, genera el ticket de quien siga en el plano
 python main.py videos/demo.mp4 --sin-ventana --guardar salida.mp4  # sin ventana, algo más rápido
+python main.py videos/demo.mp4 --resolucion 1280                 # si los productos salen pequeños (cámara lejos)
 ```
 
 - El vídeo puede estar en cualquier carpeta. En vez de escribir la ruta, arrastra el archivo a la terminal y se pega solo.

@@ -113,6 +113,22 @@ class InteraccionesTests(unittest.TestCase):
         mano_lejos = Persona(1, (200, 100, 400, 500), [(250, 250)])
         self.assertEqual(self.fotogramas(30, [mano_lejos], [en_su_sitio]), [DEVOLVER])
 
+    def test_si_yolo_la_pierde_al_cogerla_y_luego_la_regala_no_vuelve_a_sumar(self) -> None:
+        # Como en botellaIntercambioDevolucion2.mp4: la 1 la coge (YOLO la pierde un momento),
+        # se la da a la 2 y la 2 la deja en la mesa. Solo debe haber COGER, REGALAR y DEVOLVER.
+        en_su_sitio = botella(400, 330)
+        mano_1 = Persona(1, (200, 100, 400, 500), [(380, 320)])
+        dos = [mano_1, PERSONA_2]
+        eventos = self.fotogramas(10, [PERSONA_2], [en_su_sitio])
+        eventos += self.fotogramas(10, dos, [en_su_sitio])
+        for paso in range(1, 7):
+            eventos += self.fotogramas(1, dos, [botella(400 - 4 * paso, 330 - 2 * paso)])
+        eventos += self.fotogramas(20, dos, [])               # la 1 la tiene, pero YOLO no la ve
+        eventos += self.fotogramas(30, dos, [EN_MANO_2])      # se la da a la 2
+        eventos += self.fotogramas(30, dos, [en_su_sitio])    # la 2 la deja en la mesa
+        eventos += self.fotogramas(80, [PERSONA_2], [en_su_sitio])  # la 1 se va
+        self.assertEqual(eventos, [COGER, regalo(1, 2), DEVOLVER])
+
     def test_si_la_tapan_a_medias_al_pasar_por_delante_no_cuenta(self) -> None:
         en_su_sitio = botella(400, 330)  # 80 px de alto
         mano_al_lado = Persona(1, (200, 100, 400, 500), [(380, 320)])
