@@ -1,0 +1,9 @@
+target/
+data/
+.mvn/
+mvnw
+mvnw.cmd
+HELP.md
+*.iml
+.idea/
+.vscode/

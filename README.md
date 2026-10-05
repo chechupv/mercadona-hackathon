@@ -6,7 +6,22 @@ Demo de carrito automático: una cámara detecta a la persona y la botella, y ca
 Cámara → vision/ (Python + YOLO) → POST /api/eventos → backend/ (Spring Boot + H2) → WebSocket → frontend/ (React)
 ```
 
-## Arrancar
+## Arrancar con Docker (recomendado)
+
+Solo necesitas Docker Desktop abierto. Desde la raíz del repo:
+
+```bash
+docker compose up --build
+```
+
+- **Front:** http://localhost:5173
+- **Backend:** http://localhost:8080 (Swagger en `/swagger-ui.html`, consola H2 en `/h2-console`)
+
+La primera vez tarda unos minutos porque descarga las imágenes y las dependencias. Las siguientes es casi instantáneo. Para pararlo, `docker compose down`. Para empezar con la base de datos vacía, `docker compose down -v`.
+
+La visión se arranca aparte, en tu ordenador (ver [Visión](#visión)), porque Docker en Windows no puede usar la webcam ni abrir ventanas. Envía los eventos a `localhost:8080` igual que sin Docker.
+
+## Arrancar sin Docker
 
 | Parte | Requisitos | Comando | URL |
 |---|---|---|---|
