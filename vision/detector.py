@@ -98,8 +98,11 @@ class Detector:
         puntos = resultado.keypoints.xy.tolist()
         confianzas = resultado.keypoints.conf.tolist() if resultado.keypoints.conf is not None else None
 
+        altura_minima = config.ALTURA_MINIMA_PERSONA * frame.shape[0]
         personas = []
         for i, (persona_id, caja) in enumerate(zip(ids, cajas)):
+            if caja[3] - caja[1] < altura_minima:
+                continue  # persona al fondo, lejos de la mesa
             munecas = []
             for indice in (MUNECA_IZQUIERDA, MUNECA_DERECHA):
                 x, y = puntos[i][indice]

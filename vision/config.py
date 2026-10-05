@@ -43,8 +43,9 @@ VARIANTES = {
 }
 CARPETA_REFERENCIAS = "referencias"
 # Cuánto se tiene que parecer a una foto de ejemplo (0 = idéntico, 1 = nada que ver).
+# Con luz muy distinta (exterior, en la mano) los productos reales llegan a ~0.77.
 # Si confunde productos, bájalo; si deja de reconocer alguno, súbelo.
-DISTANCIA_MAXIMA_VARIANTE = 0.65
+DISTANCIA_MAXIMA_VARIANTE = 0.8
 
 
 def codigos_de_producto() -> list[str]:
@@ -54,6 +55,10 @@ def codigos_de_producto() -> list[str]:
 
 # --- Detección ---
 CONFIANZA_PERSONA = 0.5
+# Se ignoran las personas que miden menos de esta fracción del alto de la imagen: son gente
+# al fondo, lejos de la mesa, que no puede coger nada pero sí confundir al sistema.
+# Si alguien que está en la mesa no sale con recuadro verde, bájalo.
+ALTURA_MINIMA_PERSONA = 0.35
 CONFIANZA_PRODUCTO = 0.3   # bajo a propósito: una botella en la mano se ve peor
 CONFIANZA_MUNECA = 0.5
 # Resolución a la que YOLO busca productos. 640 es lo normal; súbela (960, 1280) si los
