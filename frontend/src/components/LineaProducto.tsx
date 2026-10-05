@@ -1,14 +1,18 @@
-import type { ProductoSeleccionado } from '../types/procesamiento'
+import type { LineaCarrito } from '../types/api'
+import { formatearEuros } from '../utils/formato'
 
 type LineaProductoProps = {
-  producto: ProductoSeleccionado
+  linea: LineaCarrito
 }
 
-export default function LineaProducto({ producto }: LineaProductoProps) {
+export default function LineaProducto({ linea }: LineaProductoProps) {
   return (
     <li className="product-line">
-      <span>{producto.nombre}</span>
-      <span aria-label={`Cantidad: ${producto.cantidad}`}>× {producto.cantidad}</span>
+      <span>{linea.nombre}</span>
+      <span className="product-meta">
+        <span className="product-qty" aria-label={`Cantidad: ${linea.cantidad}`}>× {linea.cantidad}</span>
+        <span>{formatearEuros(linea.subtotal)}</span>
+      </span>
     </li>
   )
 }

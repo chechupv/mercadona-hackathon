@@ -65,5 +65,43 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 .page-footer { display: flex; justify-content: space-between; margin-top: 60px; padding-top: 17px; border-top: 1px solid #e5ebe3; color: #9aa39a; font-size: 10px; }
 .page-footer > span:first-child { font-size: 9px; }
+/* Estado de conexión */
+.status-pill.is-offline { color: #8a7a4a; }
+.status-pill.is-offline > span { background: #e0b44a; }
+.status-pill:not(.is-offline) > span { animation: latido 1.6s ease-in-out infinite; }
+@keyframes latido { 50% { opacity: 0.35; } }
+
+/* Cestas en directo */
+.waiting-zone { display: flex; min-height: 205px; flex-direction: column; align-items: center; justify-content: center; padding: 20px; border: 1.5px dashed #cbd8ca; border-radius: 13px; background: #fbfdfb; text-align: center; }
+.waiting-zone strong { color: #31483a; font-size: 14px; }
+.waiting-zone > span { margin-top: 5px; color: #879188; font-size: 12px; }
+.cart-list { display: grid; gap: 12px; }
+.cart-block { padding: 2px 18px; border: 1px solid #e8ede6; border-radius: 13px; background: #fbfdfb; }
+.cart-header { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid #edf0ec; }
+.cart-avatar { display: grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border-radius: 10px; background: #edf6ee; color: #187548; font-size: 12px; font-weight: 750; }
+.cart-header strong { display: block; color: #263a2d; font-size: 14px; font-weight: 700; }
+.cart-header div span { color: #879188; font-size: 11px; }
+.cart-total { margin-left: auto; color: #183b2a; font-size: 19px; font-weight: 740; letter-spacing: -0.5px; }
+.cart-block .product-line { animation: resaltar 900ms ease-out; }
+.product-meta { display: inline-flex; gap: 14px; }
+.product-qty { color: #879188; font-weight: 600; }
+@keyframes resaltar { from { background: #e3f3e7; } to { background: transparent; } }
+
+/* Actividad en directo */
+.activity-list { position: relative; z-index: 1; display: grid; gap: 13px; margin: 0; padding: 0; list-style: none; }
+.activity-item { display: flex; align-items: flex-start; gap: 11px; color: #e0e9e1; font-size: 11px; line-height: 1.45; animation: entrar 300ms ease-out; }
+.activity-item strong { color: #fff; font-weight: 650; }
+.activity-item time { display: block; color: rgba(224, 233, 225, 0.55); font-size: 10px; }
+.activity-badge { display: grid; width: 28px; height: 22px; flex: 0 0 28px; place-items: center; border-radius: 99px; font-size: 10px; font-weight: 750; }
+.activity-badge.is-add { background: rgba(217, 233, 168, 0.16); color: #dce8a6; }
+.activity-badge.is-remove { background: rgba(241, 188, 56, 0.16); color: #f1bc38; }
+@keyframes entrar { from { opacity: 0; transform: translateY(-4px); } }
+
+/* Ticket */
+.ticket-card { border-color: #b7d9c0; animation: entrar 400ms ease-out; }
+.ticket-total { display: flex; align-items: baseline; justify-content: space-between; padding-top: 16px; border-top: 1px solid #edf0ec; color: #263a2d; font-size: 13px; font-weight: 700; }
+.ticket-total strong { color: #16804e; font-size: 24px; letter-spacing: -0.6px; }
+
+@media (prefers-reduced-motion: reduce) { .status-pill > span, .cart-block .product-line, .activity-item, .ticket-card { animation: none !important; } }
 @media (max-width: 720px) { .topbar { height: 66px; padding: 0 20px; } .topbar-label { display: none; } .main-content { width: min(100% - 36px, 520px); padding-top: 44px; } .intro { margin-bottom: 26px; } .intro h1 { letter-spacing: -2.4px; } .intro-copy { font-size: 14px; } .workspace { grid-template-columns: 1fr; } .upload-card { padding: 21px; } .info-card { padding: 22px; } .info-icon { margin-bottom: 16px; } .info-card h3 br { display: none; } .info-card h3 { margin-bottom: 17px; font-size: 24px; } .steps-list { gap: 10px; } .result-card { padding: 22px 20px; } .result-header { align-items: flex-start; flex-direction: column; gap: 13px; } .page-footer { margin-top: 38px; } }
 @media (max-width: 420px) { .status-pill { padding: 8px 9px; font-size: 10px; } .brand { gap: 7px; font-size: 17px; } .brand-mark { width: 31px; height: 31px; } .main-content { width: calc(100% - 28px); } .drop-zone { min-height: 190px; } .page-footer { gap: 12px; font-size: 9px; } }
