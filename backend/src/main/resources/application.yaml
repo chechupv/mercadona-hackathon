@@ -24,3 +24,8 @@ spring:
   h2:
     console:
       enabled: true
+
+# Web para probar la API sin curl: http://localhost:8080/swagger-ui.html
+springdoc:
+  swagger-ui:
+    operations-sorter: method

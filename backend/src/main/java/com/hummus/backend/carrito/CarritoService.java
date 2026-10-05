@@ -7,10 +7,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hummus.backend.carrito.dto.CarritoResponse;
+import com.hummus.backend.common.websocket.Notificacion;
 import com.hummus.backend.producto.Producto;
 import com.hummus.backend.producto.ProductoService;
 
@@ -18,15 +20,18 @@ import com.hummus.backend.producto.ProductoService;
 @Transactional
 public class CarritoService {
 
+    /** El front recibe aquí la lista completa de carritos tras cada cambio. */
+    public static final String TOPIC = "/topic/carritos";
+
     private final LineaCarritoRepository lineaRepository;
     private final ProductoService productoService;
-    private final CarritoNotifier notifier;
+    private final ApplicationEventPublisher eventPublisher;
 
     public CarritoService(LineaCarritoRepository lineaRepository, ProductoService productoService,
-            CarritoNotifier notifier) {
+            ApplicationEventPublisher eventPublisher) {
         this.lineaRepository = lineaRepository;
         this.productoService = productoService;
-        this.notifier = notifier;
+        this.eventPublisher = eventPublisher;
     }
 
     public CarritoResponse sumar(Long personaId, String codigo) {
@@ -64,13 +69,19 @@ public class CarritoService {
         return lineas.isEmpty() ? Optional.empty() : Optional.of(toResponse(personaId, lineas));
     }
 
+    /** Se usa al finalizar la compra: el carrito pasa a ser un ticket. */
+    public void vaciar(Long personaId) {
+        lineaRepository.deleteByPersonaId(personaId);
+        eventPublisher.publishEvent(new Notificacion(TOPIC, listar()));
+    }
+
     public void vaciarTodos() {
         lineaRepository.deleteAllInBatch();
-        notifier.notificar(List.of());
+        eventPublisher.publishEvent(new Notificacion(TOPIC, List.of()));
     }
 
     private CarritoResponse notificarYDevolver(Long personaId) {
-        notifier.notificar(listar());
+        eventPublisher.publishEvent(new Notificacion(TOPIC, listar()));
         return toResponse(personaId, lineaRepository.findByPersonaIdOrderByIdAsc(personaId));
     }
 

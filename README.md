@@ -1,0 +1,103 @@
+# Mercadona Just Walk Out
+
+Demo de carrito automático: una cámara detecta a la persona y la botella, y cada vez que la coge o la devuelve el carrito suma o resta en tiempo real.
+
+```
+Cámara → vision/ (Python + YOLO) → POST /api/eventos → backend/ (Spring Boot + H2) → WebSocket → frontend/ (React)
+```
+
+## Arrancar
+
+| Parte | Requisitos | Comando | URL |
+|---|---|---|---|
+| Backend | JDK 21 | `cd backend && ./mvnw spring-boot:run` | http://localhost:8080 |
+| Frontend | Node 20+ | `cd frontend && npm install && npm run dev` | http://localhost:5173 |
+| Visión | Python 3.11+ | `cd vision && pip install -r requirements.txt && python main.py` | — |
+
+Herramientas del backend:
+
+- **Swagger** (probar la API desde el navegador): http://localhost:8080/swagger-ui.html
+- **Consola H2** (ver las tablas): http://localhost:8080/h2-console. JDBC URL `jdbc:h2:file:./data/mercadona`, usuario `sa`, sin contraseña.
+- **Tests**: `cd backend && ./mvnw test`
+
+El catálogo de productos está en `backend/src/main/resources/data.sql`. El `codigo` de cada producto tiene que ser la clase que detecta YOLO (`bottle`, `cup`…).
+
+## API
+
+### Visión → Backend
+
+`POST /api/eventos`: la persona coge o devuelve un producto.
+
+```json
+{ "personaId": 1, "producto": "bottle", "accion": "COGER" }
+```
+
+- `accion` puede ser `COGER` o `DEVOLVER`.
+- Devuelve el carrito actualizado de esa persona.
+- Un `DEVOLVER` de más se ignora: la cantidad nunca baja de 0.
+
+`POST /api/tickets`: finaliza la compra (por ejemplo, cuando la persona sale del plano).
+
+```json
+{ "personaId": 1 }
+```
+
+- Devuelve `201` con el ticket, y el carrito de esa persona se vacía.
+- Si el carrito está vacío, devuelve `409`.
+
+### Front → Backend
+
+| Método | Ruta | Para qué |
+|---|---|---|
+| `GET` | `/api/carritos` | Todos los carritos (estado inicial al abrir la página) |
+| `GET` | `/api/carritos/{personaId}` | Un carrito (`404` si está vacío) |
+| `DELETE` | `/api/carritos` | Vaciar todos los carritos entre tomas del vídeo |
+| `GET` | `/api/productos` | Catálogo, ordenado por nombre |
+| `GET` | `/api/eventos?limite=20` | Historial, los más recientes primero (`limite` de 1 a 200) |
+| `GET` | `/api/tickets?limite=20` | Últimos tickets |
+| `GET` | `/api/tickets/{id}` | Un ticket |
+
+### Backend → Front (WebSocket)
+
+STOMP en `ws://localhost:8080/ws`. Los mensajes se envían solo cuando el cambio ya se ha guardado en la base de datos.
+
+| Topic | Cuándo | Contenido |
+|---|---|---|
+| `/topic/carritos` | Cualquier cambio en los carritos | Lista completa de carritos (sustituye el estado del front) |
+| `/topic/eventos` | Cada COGER o DEVOLVER | El evento, para mostrar "Persona 1 ha cogido Agua" |
+| `/topic/tickets` | Cada compra finalizada | El ticket |
+
+### Formatos
+
+Carrito:
+
+```json
+{
+  "personaId": 1,
+  "lineas": [
+    { "producto": "bottle", "nombre": "Agua Solán de cabras 1,5 L", "cantidad": 2, "precioUnitario": 0.45, "subtotal": 0.90 }
+  ],
+  "totalUnidades": 2,
+  "total": 0.90
+}
+```
+
+Evento:
+
+```json
+{ "id": 7, "personaId": 1, "producto": "bottle", "nombre": "Agua Solán de cabras 1,5 L", "accion": "COGER", "fecha": "2026-10-05T10:15:30Z" }
+```
+
+Ticket: los mismos campos que el carrito, más `id` y `fecha`.
+
+Errores (formato ProblemDetail):
+
+```json
+{ "status": 400, "title": "Bad Request", "detail": "Producto desconocido: banana" }
+{ "status": 400, "detail": "Invalid request content.", "errores": ["personaId: must not be null"] }
+{ "status": 409, "detail": "La persona 1 no tiene productos en el carrito" }
+```
+
+## Cómo escalaría a una tienda real
+
+Esta demo usa una sola cámara y la persona no sale del plano. En una tienda real se usarían varias cámaras: cada una detecta personas con YOLO, la homografía de OpenCV pasa su posición a coordenadas del plano de la tienda, y OSNet o DINOv2 generan una huella visual (ropa y silueta, sin datos biométricos) para mantener el mismo ID y el mismo carrito al pasar de una cámara a otra.

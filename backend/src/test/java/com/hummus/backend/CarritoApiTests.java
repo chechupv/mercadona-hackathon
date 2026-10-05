@@ -45,7 +45,7 @@ class CarritoApiTests {
         evento(1, "bottle", "COGER");
         evento(1, "bottle", "COGER")
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.lineas[0].nombre").value("Agua Bronchales 1,5 L"))
+                .andExpect(jsonPath("$.lineas[0].producto").value("bottle"))
                 .andExpect(jsonPath("$.lineas[0].cantidad").value(2))
                 .andExpect(jsonPath("$.total").value(0.90));
 

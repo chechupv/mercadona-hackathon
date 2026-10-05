@@ -1,12 +1,12 @@
-package com.hummus.backend.evento;
+package com.hummus.backend.ticket;
 
 import java.util.List;
 
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface EventoRepository extends JpaRepository<Evento, Long> {
+public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     /** Los más recientes primero. */
-    List<Evento> findByOrderByIdDesc(Limit limit);
+    List<Ticket> findByOrderByIdDesc(Limit limit);
 }

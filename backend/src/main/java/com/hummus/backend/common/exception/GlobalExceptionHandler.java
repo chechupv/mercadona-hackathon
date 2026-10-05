@@ -12,6 +12,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import com.hummus.backend.producto.ProductoDesconocidoException;
+import com.hummus.backend.ticket.CarritoVacioException;
 
 /** Todos los errores salen en formato ProblemDetail (RFC 9457). */
 @RestControllerAdvice
@@ -20,6 +21,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ProductoDesconocidoException.class)
     public ProblemDetail productoDesconocido(ProductoDesconocidoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(CarritoVacioException.class)
+    public ProblemDetail carritoVacio(CarritoVacioException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     /** Añade qué campo ha fallado, para que quien llame a la API lo vea rápido. */

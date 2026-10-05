@@ -12,4 +12,6 @@ public interface LineaCarritoRepository extends JpaRepository<LineaCarrito, Long
     List<LineaCarrito> findByPersonaIdOrderByIdAsc(Long personaId);
 
     List<LineaCarrito> findAllByOrderByPersonaIdAscIdAsc();
+
+    void deleteByPersonaId(Long personaId);
 }
