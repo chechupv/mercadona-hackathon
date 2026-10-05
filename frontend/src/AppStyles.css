@@ -102,7 +102,40 @@
 .ticket-card { border-color: #b7d9c0; animation: entrar 400ms ease-out; }
 .ticket-total { display: flex; align-items: baseline; justify-content: space-between; padding-top: 16px; border-top: 1px solid #edf0ec; color: #263a2d; font-size: 13px; font-weight: 700; }
 .ticket-total strong { color: #16804e; font-size: 24px; letter-spacing: -0.6px; }
+.brand-button { padding: 0; border: 0; background: transparent; cursor: pointer; font: inherit; }
+.menu-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.menu-card { display: flex; min-height: 265px; flex-direction: column; align-items: flex-start; padding: 23px; border: 1px solid #e8ede6; border-radius: 17px; background: #fff; box-shadow: 0 12px 36px rgba(35, 67, 44, 0.045); color: inherit; cursor: pointer; text-align: left; transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
+.menu-card:hover { transform: translateY(-3px); border-color: #b7d9c0; box-shadow: 0 16px 38px rgba(35, 67, 44, 0.09); }
+.menu-card:focus-visible { outline: 3px solid rgba(41, 144, 90, 0.3); outline-offset: 3px; }
+.menu-card-icon { display: grid; width: 44px; height: 44px; place-items: center; margin-bottom: 20px; border-radius: 13px; background: #edf6ee; color: #187548; font-size: 25px; font-weight: 700; }
+.menu-card-number, .sample-label { color: #829086; font-size: 9px; font-weight: 750; letter-spacing: 1px; }
+.menu-card strong { margin-top: 8px; color: #263a2d; font-size: 17px; letter-spacing: -0.4px; }
+.menu-card-description { margin-top: 7px; color: #78847b; font-size: 12px; line-height: 1.6; }
+.menu-card-link { display: flex; justify-content: space-between; width: 100%; margin-top: auto; padding-top: 20px; color: #16804e; font-size: 12px; font-weight: 700; }
+.management-panel { overflow: hidden; border: 1px solid #e8ede6; border-radius: 17px; background: #fff; box-shadow: 0 12px 36px rgba(35, 67, 44, 0.045); }
+.management-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 23px 26px; border-bottom: 1px solid #edf0ec; }
+.management-heading h2 { margin: 0 0 4px; color: #263a2d; font-size: 18px; letter-spacing: -0.4px; }
+.management-heading p { margin: 0; color: #879188; font-size: 12px; }
+.sample-label { padding: 7px 9px; border-radius: 99px; background: #f1f5ef; white-space: nowrap; }
+.management-list { padding: 0 26px; }
+.management-row { display: flex; min-height: 82px; align-items: center; gap: 16px; border-bottom: 1px solid #f0f2ef; }
+.management-row:last-child { border-bottom: 0; }
+.device-icon, .priority-mark { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border-radius: 11px; background: #f1f3f0; color: #8c968d; font-size: 19px; }
+.device-icon.is-active { background: #edf6ee; color: #16804e; }
+.management-details { display: grid; flex: 1; gap: 4px; min-width: 0; }
+.management-details strong { overflow: hidden; color: #35473b; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.management-details > span { color: #879188; font-size: 11px; }
+.state-badge { padding: 6px 9px; border-radius: 99px; background: #fff4e5; color: #a46916; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.state-badge.is-active { background: #edf6ee; color: #26734a; }
+.state-badge.is-paused { background: #f1f3f0; color: #727c74; }
+.state-badge.is-progress { background: #edf3fc; color: #456994; }
+.priority-mark { background: #fff0ed; color: #bc5141; font-weight: 800; }
+.priority-media { background: #fff6e8; color: #a46916; }
+.priority-baja { background: #edf6ee; color: #26734a; }
+.management-row .text-button { flex: 0 0 auto; }
 
 @media (prefers-reduced-motion: reduce) { .status-pill > span, .cart-block .product-line, .activity-item, .ticket-card { animation: none !important; } }
-@media (max-width: 720px) { .topbar { height: 66px; padding: 0 20px; } .topbar-label { display: none; } .main-content { width: min(100% - 36px, 520px); padding-top: 44px; } .intro { margin-bottom: 26px; } .intro h1 { letter-spacing: -2.4px; } .intro-copy { font-size: 14px; } .workspace { grid-template-columns: 1fr; } .upload-card { padding: 21px; } .info-card { padding: 22px; } .info-icon { margin-bottom: 16px; } .info-card h3 br { display: none; } .info-card h3 { margin-bottom: 17px; font-size: 24px; } .steps-list { gap: 10px; } .result-card { padding: 22px 20px; } .result-header { align-items: flex-start; flex-direction: column; gap: 13px; } .page-footer { margin-top: 38px; } }
+@media (max-width: 900px) { .menu-grid { grid-template-columns: 1fr; } .menu-card { min-height: 225px; } }
+@media (max-width: 720px) { .topbar { height: 66px; padding: 0 20px; } .topbar-label { display: none; } .main-content { width: min(100% - 36px, 520px); padding-top: 44px; } .intro { margin-bottom: 26px; } .intro h1 { letter-spacing: -2.4px; } .intro-copy { font-size: 14px; } .workspace { grid-template-columns: 1fr; } .upload-card { padding: 21px; } .info-card { padding: 22px; } .info-icon { margin-bottom: 16px; } .info-card h3 br { display: none; } .info-card h3 { margin-bottom: 17px; font-size: 24px; } .steps-list { gap: 10px; } .result-card { padding: 22px 20px; } .result-header { align-items: flex-start; flex-direction: column; gap: 13px; } .page-footer { margin-top: 38px; } .management-heading, .management-list { padding-right: 18px; padding-left: 18px; } .management-row { gap: 10px; } .management-row .state-badge { margin-left: auto; } .incident-row .management-details { flex-basis: 40%; } }
+@media (max-width: 480px) { .management-heading { align-items: flex-start; flex-direction: column; } .management-row { flex-wrap: wrap; padding: 14px 0; } .management-details { flex-basis: calc(100% - 52px); } .management-row .state-badge { margin-left: 48px; } .management-row .text-button { margin-left: auto; } }
 @media (max-width: 420px) { .status-pill { padding: 8px 9px; font-size: 10px; } .brand { gap: 7px; font-size: 17px; } .brand-mark { width: 31px; height: 31px; } .main-content { width: calc(100% - 28px); } .drop-zone { min-height: 190px; } .page-footer { gap: 12px; font-size: 9px; } }
