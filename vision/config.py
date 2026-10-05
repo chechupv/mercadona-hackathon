@@ -78,6 +78,18 @@ FOTOGRAMAS_REPOSO = 150
 # cámara pero no a una botella que alguien está levantando poco a poco.
 SUAVIZADO_SITIO = 0.05
 
+# Si al cogerlo YOLO deja de ver el producto (lo gira para mirarlo, la mano lo tapa...),
+# se le atribuye a la persona si, justo antes de desaparecer:
+#   - se estaba moviendo: en ~10 fotogramas avanzó MOVIMIENTO_INICIO veces su altura,
+#   - sin encogerse: su recuadro mide al menos ALTO_MINIMO_RELATIVO de lo normal
+#     (si encoge es que alguien lo tapa a medias al pasar por delante),
+#   - y había una muñeca cerca (DISTANCIA_DESAPARECER, fracción de la altura de la persona).
+# Se comprueba cuando lleva FOTOGRAMAS_DESAPARECER fotogramas sin verse.
+FOTOGRAMAS_DESAPARECER = 3
+MOVIMIENTO_INICIO = 0.25
+ALTO_MINIMO_RELATIVO = 0.75
+DISTANCIA_DESAPARECER = 0.3
+
 # Fotogramas seguidos que tiene que mantenerse el cambio para contarlo.
 # Soltar pide más porque la mano tapa la botella a ratos y YOLO la pierde.
 # Si suma y resta solo, súbelos.

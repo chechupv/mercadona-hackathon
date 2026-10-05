@@ -59,6 +59,7 @@ Cómo decide el +1 y el −1 (`interaccion.py`):
 - **Coger (+1):** la botella **se ha movido de su sitio en la mesa**, su centro está cerca de una muñeca durante `FOTOGRAMAS_COGER` fotogramas **y desaparece una botella suelta de la escena**. Que tenga que moverse evita contar la botella de al lado cuando alguien alarga el brazo para coger otra.
 - **Regalar:** si le aparece en la mano sin que falte ninguna en la mesa y a otra persona se le acaba de quedar la mano vacía, se la han dado. Como en Amazon Go, **paga quien la cogió de la estantería**: quien la recibe no paga. Si quien la recibe la deja en la mesa, se le resta a quien la pagaba.
 - **Dejarla (−1):** la botella ya no está en la mano **y aparece una botella suelta más en la escena** (la ha dejado en la mesa) durante `FOTOGRAMAS_SOLTAR` fotogramas.
+- **Cogerla aunque YOLO la pierda:** si la botella empieza a moverse de su sitio y desaparece junto a una muñeca (por ejemplo, la persona la gira para mirarla), se considera que la tiene esa persona. Si solo desaparece sin moverse, o su recuadro encoge, es que alguien la tapa al pasar y no cuenta.
 - **Llevársela:** si la botella simplemente deja de verse (la mano la tapa, la persona se gira o sale del plano con ella), sigue en el carrito.
 - **Salir:** si la persona desaparece `SEGUNDOS_SALIDA` segundos, se finaliza su compra. Si dejó algo en la mesa justo antes de irse, se resta antes de generar el ticket.
 

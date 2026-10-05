@@ -97,6 +97,43 @@ class InteraccionesTests(unittest.TestCase):
             eventos += self.fotogramas(1, [mano], [botella(320, 330 - 3 * paso)])
         self.assertEqual(eventos, [COGER])
 
+    def test_si_yolo_la_pierde_al_cogerla_cuenta_igual_y_al_dejarla_resta(self) -> None:
+        en_su_sitio = botella(400, 330)
+        mano_al_lado = Persona(1, (200, 100, 400, 500), [(380, 320)])
+        self.fotogramas(10, [], [en_su_sitio])
+        self.fotogramas(10, [mano_al_lado], [en_su_sitio])
+        # Empieza a levantarla (se mueve 4 px por fotograma, aún cerca de su sitio)...
+        for paso in range(1, 7):
+            self.fotogramas(1, [mano_al_lado], [botella(400 - 4 * paso, 330 - 2 * paso)])
+        # ...y YOLO deja de verla porque la gira para mirarla
+        eventos = self.fotogramas(40, [mano_al_lado], [])
+        self.assertEqual(eventos, [COGER])
+
+        # La vuelve a dejar en su sitio y aparta la mano
+        mano_lejos = Persona(1, (200, 100, 400, 500), [(250, 250)])
+        self.assertEqual(self.fotogramas(30, [mano_lejos], [en_su_sitio]), [DEVOLVER])
+
+    def test_si_la_tapan_a_medias_al_pasar_por_delante_no_cuenta(self) -> None:
+        en_su_sitio = botella(400, 330)  # 80 px de alto
+        mano_al_lado = Persona(1, (200, 100, 400, 500), [(380, 320)])
+        self.fotogramas(10, [], [en_su_sitio])
+        self.fotogramas(10, [mano_al_lado], [en_su_sitio])
+        # El cuerpo tapa la mitad de abajo: el recuadro encoge y su centro sube (parece que se mueve)
+        for _ in range(6):
+            self.fotogramas(1, [mano_al_lado], [Producto("bottle", (385, 290, 415, 320), 0.5)])
+        eventos = self.fotogramas(40, [mano_al_lado], [])
+        eventos += self.fotogramas(20, [mano_al_lado], [en_su_sitio])
+        self.assertEqual(eventos, [])
+
+    def test_si_solo_la_tapan_sin_moverla_no_cuenta(self) -> None:
+        en_su_sitio = botella(400, 330)
+        mano_al_lado = Persona(1, (200, 100, 400, 500), [(380, 320)])
+        self.fotogramas(10, [], [en_su_sitio])
+        self.fotogramas(10, [mano_al_lado], [en_su_sitio])
+        eventos = self.fotogramas(40, [mano_al_lado], [])  # el cuerpo la tapa
+        eventos += self.fotogramas(20, [mano_al_lado], [en_su_sitio])
+        self.assertEqual(eventos, [])
+
     # --- Dejarla en la mesa: resta ---
 
     def test_dejarla_en_la_mesa_resta(self) -> None:

@@ -45,13 +45,33 @@ class _Estado:
     fotogramas: int = 0         # cuántos fotogramas llevamos viendo el candidato
     libres_referencia: int = 0  # productos sueltos en la escena la última vez que todo cuadraba
     regalos: list[int] = field(default_factory=list)  # quién paga cada unidad que le han regalado
+    ocultos: int = 0            # unidades que tiene en la mano aunque YOLO no las vea (ver _detectar_desapariciones)
 
 
 @dataclass
 class _Sitio:
     """Un sitio donde ha estado un producto suelto (p. ej. su hueco en la mesa)."""
-    punto: tuple[float, float]
+    punto: tuple[float, float]          # posición suavizada del sitio
     ultimo_fotograma: int
+    llevado_por: int | None = None      # persona a la que se le ha atribuido al desaparecer
+    # Últimas veces que se vio suelto aquí: (fotograma, centro, altura)
+    vistas: deque = field(default_factory=lambda: deque(maxlen=30))
+
+    def ver(self, fotograma: int, centro: tuple[float, float], alto: float) -> None:
+        self.ultimo_fotograma = fotograma
+        self.vistas.append((fotograma, centro, alto))
+
+    def empezaba_a_moverse(self, movimiento_minimo: float, alto_minimo: float) -> bool:
+        """Justo antes de desaparecer se estaba moviendo (en los ~10 fotogramas anteriores)
+        sin encogerse. Si el recuadro encoge es que lo tapaban a medias, no que lo levantaran."""
+        fotograma, centro, alto = self.vistas[-1]
+        antes = [c for f, c, _ in self.vistas if fotograma - 12 <= f <= fotograma - 8]
+        altos = sorted(a for f, _, a in self.vistas if f < fotograma - 3)
+        if not antes or not altos:
+            return False
+        alto_normal = altos[len(altos) // 2]
+        return (dist(centro, antes[0]) >= movimiento_minimo * alto_normal
+                and alto >= alto_minimo * alto_normal)
 
 
 @dataclass
@@ -65,6 +85,10 @@ class Interacciones:
     desplazamiento_coger: float = config.DESPLAZAMIENTO_COGER
     fotogramas_reposo: int = config.FOTOGRAMAS_REPOSO
     suavizado_sitio: float = config.SUAVIZADO_SITIO
+    fotogramas_desaparecer: int = config.FOTOGRAMAS_DESAPARECER
+    movimiento_inicio: float = config.MOVIMIENTO_INICIO
+    alto_minimo_relativo: float = config.ALTO_MINIMO_RELATIVO
+    distancia_desaparecer: float = config.DISTANCIA_DESAPARECER
 
     def __post_init__(self) -> None:
         self._estados: dict[tuple[int, str], _Estado] = {}
@@ -77,6 +101,7 @@ class Interacciones:
     def actualizar(self, personas: list[Persona], productos: list[Producto], ahora: float) -> ResultadoFotograma:
         duenos = self._asignar_duenos(personas, productos)
         self._recordar_reposo(productos, duenos)
+        self._detectar_desapariciones(personas)
 
         en_mano: dict[tuple[int, str], int] = {}
         libres = {clase: 0 for clase in self.productos}
@@ -137,18 +162,40 @@ class Interacciones:
         for indice, producto in enumerate(productos):
             if indice in duenos or producto.clase not in self._sitios:
                 continue
+            alto = producto.caja[3] - producto.caja[1]
             sitio = self._sitio_cercano(producto)
             if sitio is None:
-                self._sitios[producto.clase].append(_Sitio(producto.centro, self._fotograma))
-                continue
-            # El sitio se acerca muy despacio a donde se ve el producto: así sigue la deriva lenta
-            # de la cámara, pero no a una botella que alguien está levantando poco a poco
-            (x, y), (nx, ny), a = sitio.punto, producto.centro, self.suavizado_sitio
-            sitio.punto = (x + (nx - x) * a, y + (ny - y) * a)
-            sitio.ultimo_fotograma = self._fotograma
+                sitio = _Sitio(producto.centro, self._fotograma)
+                self._sitios[producto.clase].append(sitio)
+            else:
+                # El sitio se acerca muy despacio a donde se ve el producto: así sigue la deriva lenta
+                # de la cámara, pero no a una botella que alguien está levantando poco a poco
+                (x, y), (nx, ny), a = sitio.punto, producto.centro, self.suavizado_sitio
+                sitio.punto = (x + (nx - x) * a, y + (ny - y) * a)
+                sitio.llevado_por = None  # se ve suelto en su sitio: nadie lo lleva
+            sitio.ver(self._fotograma, producto.centro, alto)
         # Se olvidan los sitios que llevan mucho sin verse (el producto se fue o la cámara se movió)
         for clase, sitios in self._sitios.items():
             self._sitios[clase] = [s for s in sitios if self._fotograma - s.ultimo_fotograma <= self.fotogramas_reposo]
+
+    def _detectar_desapariciones(self, personas: list[Persona]) -> None:
+        """Un producto que empieza a moverse de su sitio y desaparece junto a una muñeca lo
+        tiene esa persona en la mano, aunque YOLO ya no lo vea (p. ej. lo gira para mirarlo
+        o la mano lo tapa). Si solo desaparece sin haberse movido, es que alguien lo tapa."""
+        for clase, sitios in self._sitios.items():
+            for sitio in sitios:
+                if sitio.llevado_por is not None or self._fotograma - sitio.ultimo_fotograma != self.fotogramas_desaparecer:
+                    continue
+                if not sitio.empezaba_a_moverse(self.movimiento_inicio, self.alto_minimo_relativo):
+                    continue  # no se estaba moviendo, o encogía: solo lo han tapado
+                ultimo_centro = sitio.vistas[-1][1]
+                cercanas = [(dist(ultimo_centro, muneca), persona) for persona in personas
+                            for muneca in persona.munecas
+                            if dist(ultimo_centro, muneca) <= self.distancia_desaparecer * persona.altura]
+                if cercanas:
+                    persona = min(cercanas, key=lambda c: c[0])[1]
+                    sitio.llevado_por = persona.id
+                    self._estado(persona.id, clase).ocultos += 1
 
     def _asignar_duenos(self, personas: list[Persona], productos: list[Producto]) -> dict[int, int]:
         """Asigna cada producto que se ha movido a la muñeca más cercana, si está lo bastante cerca."""
@@ -176,7 +223,11 @@ class Interacciones:
     def _actualizar_estado(self, persona_id: int, clase: str, en_mano: dict[tuple[int, str], int],
                            visibles: set[int]) -> list[Evento]:
         estado = self._estado(persona_id, clase)
-        cantidad = en_mano.get((persona_id, clase), 0)
+
+        if estado.ocultos and self._soltados(estado, clase):
+            # El producto que llevaba sin que YOLO lo viera ha vuelto a aparecer suelto
+            estado.ocultos = max(0, estado.ocultos - self._soltados(estado, clase))
+        cantidad = max(en_mano.get((persona_id, clase), 0), estado.ocultos)
 
         if cantidad < estado.en_mano:
             # Ya no lo vemos en la mano. Solo cuenta como soltado si ha aparecido suelto en la
