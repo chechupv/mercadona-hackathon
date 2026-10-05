@@ -17,6 +17,7 @@ probar con datos inventados (test_interaccion.py).
 from collections import deque
 from dataclasses import dataclass, field
 from math import dist, inf
+from statistics import median
 
 import config
 from detector import Persona, Producto
@@ -55,37 +56,19 @@ class _Sitio:
     ultimo_fotograma: int
     llevado_por: int | None = None      # persona a la que se le ha atribuido al desaparecer
     # Últimas veces que se vio suelto aquí: (fotograma, centro, altura)
-    vistas: deque = field(default_factory=lambda: deque(maxlen=30))
-    # Dónde estaba el producto cuando se le acercó una mano (y hasta cuándo siguió cerca)
-    anclaje: tuple[float, float] | None = None
-    ultima_mano: int = 0
+    vistas: deque = field(default_factory=lambda: deque(maxlen=60))
 
-    def ver(self, fotograma: int, centro: tuple[float, float], alto: float, mano_cerca: bool) -> None:
+    def ver(self, fotograma: int, centro: tuple[float, float], alto: float) -> None:
         self.ultimo_fotograma = fotograma
         self.vistas.append((fotograma, centro, alto))
-        if mano_cerca:
-            if self.anclaje is None:
-                self.anclaje = centro
-            self.ultima_mano = fotograma
-        elif fotograma - self.ultima_mano > 30:
-            self.anclaje = None  # la mano se fue hace rato: el próximo acercamiento empieza de cero
 
-    def empezaba_a_moverse(self, movimiento_minimo: float, alto_minimo: float) -> bool:
-        """Justo antes de desaparecer se estaba moviendo sin encogerse. "Moverse" es haber
-        avanzado en los ~10 fotogramas anteriores, o respecto a donde estaba cuando se acercó
-        la mano (así también se detecta a quien lo levanta muy despacio). Si el recuadro
-        encoge es que lo tapaban a medias, no que lo levantaran."""
-        fotograma, centro, alto = self.vistas[-1]
-        antes = [c for f, c, _ in self.vistas if fotograma - 12 <= f <= fotograma - 8]
-        altos = sorted(a for f, _, a in self.vistas if f < fotograma - 3)
-        if not altos:
-            return False
-        alto_normal = altos[len(altos) // 2]
-        if alto < alto_minimo * alto_normal:
-            return False
-        minimo = movimiento_minimo * alto_normal
-        return bool((antes and dist(centro, antes[0]) >= minimo)
-                    or (self.anclaje is not None and dist(centro, self.anclaje) >= minimo))
+    def vista_cerca(self, fotograma: int, margen: int) -> tuple[int, tuple[float, float]] | None:
+        """La vez que se vio más cerca de ese fotograma (a como mucho `margen` fotogramas)."""
+        cercanas = [(abs(f - fotograma), f, c) for f, c, _ in self.vistas if abs(f - fotograma) <= margen]
+        if not cercanas:
+            return None
+        _, f, c = min(cercanas)
+        return f, c
 
 
 @dataclass
@@ -114,7 +97,7 @@ class Interacciones:
 
     def actualizar(self, personas: list[Persona], productos: list[Producto], ahora: float) -> ResultadoFotograma:
         duenos = self._asignar_duenos(personas, productos)
-        self._recordar_reposo(productos, duenos, personas)
+        self._recordar_reposo(productos, duenos)
         self._detectar_desapariciones(personas)
 
         en_mano: dict[tuple[int, str], int] = {}
@@ -171,7 +154,7 @@ class Interacciones:
         mano aunque haya una muñeca cerca (p. ej. al alargar el brazo para coger el de al lado)."""
         return self._sitio_cercano(producto) is not None
 
-    def _recordar_reposo(self, productos: list[Producto], duenos: dict[int, int], personas: list[Persona]) -> None:
+    def _recordar_reposo(self, productos: list[Producto], duenos: dict[int, int]) -> None:
         self._fotograma += 1
         for indice, producto in enumerate(productos):
             if indice in duenos or producto.clase not in self._sitios:
@@ -187,12 +170,51 @@ class Interacciones:
                 (x, y), (nx, ny), a = sitio.punto, producto.centro, self.suavizado_sitio
                 sitio.punto = (x + (nx - x) * a, y + (ny - y) * a)
                 sitio.llevado_por = None  # se ve suelto en su sitio: nadie lo lleva
-            mano_cerca = any(dist(producto.centro, muneca) <= self.distancia_desaparecer * persona.altura
-                             for persona in personas for muneca in persona.munecas)
-            sitio.ver(self._fotograma, producto.centro, alto, mano_cerca)
+            sitio.ver(self._fotograma, producto.centro, alto)
         # Se olvidan los sitios que llevan mucho sin verse (el producto se fue o la cámara se movió)
         for clase, sitios in self._sitios.items():
             self._sitios[clase] = [s for s in sitios if self._fotograma - s.ultimo_fotograma <= self.fotogramas_reposo]
+
+    def _empezaba_a_moverse(self, sitio: _Sitio) -> bool:
+        """Justo antes de desaparecer se estaba moviendo sin encogerse.
+
+        "Moverse" es haber avanzado respecto a ~10 fotogramas antes, o respecto a ~40 antes
+        (así también se detecta a quien lo levanta muy despacio). Siempre se descuenta lo que
+        se ha movido la cámara, medido con los demás productos sueltos: si todos se desplazan
+        igual es la cámara, no una mano. Si el recuadro encoge, lo tapaban a medias."""
+        fotograma, centro, alto = sitio.vistas[-1]
+        altos = sorted(a for f, _, a in sitio.vistas if f < fotograma - 3)
+        if not altos:
+            return False
+        alto_normal = altos[len(altos) // 2]
+        if alto < self.alto_minimo_relativo * alto_normal:
+            return False
+        for atras, margen in ((10, 2), (40, 10)):
+            antes = sitio.vista_cerca(fotograma - atras, margen)
+            if antes is None:
+                continue
+            fotograma_antes, centro_antes = antes
+            dx, dy = self._movimiento_camara(sitio, fotograma_antes, fotograma)
+            movido = dist((centro[0] - dx, centro[1] - dy), centro_antes)
+            if movido >= self.movimiento_inicio * alto_normal:
+                return True
+        return False
+
+    def _movimiento_camara(self, excepto: _Sitio, desde: int, hasta: int) -> tuple[float, float]:
+        """Cuánto se han desplazado en la imagen los demás productos sueltos entre dos fotogramas
+        (la mediana). Como esos productos no los toca nadie, ese desplazamiento es la cámara."""
+        dxs, dys = [], []
+        for sitios in self._sitios.values():
+            for otro in sitios:
+                if otro is excepto:
+                    continue
+                inicio, fin = otro.vista_cerca(desde, 3), otro.vista_cerca(hasta, 3)
+                if inicio and fin:
+                    dxs.append(fin[1][0] - inicio[1][0])
+                    dys.append(fin[1][1] - inicio[1][1])
+        if not dxs:
+            return 0.0, 0.0  # no hay otros productos con los que comparar: se asume cámara quieta
+        return median(dxs), median(dys)
 
     def _detectar_desapariciones(self, personas: list[Persona]) -> None:
         """Un producto que empieza a moverse de su sitio y desaparece junto a una muñeca lo
@@ -202,7 +224,7 @@ class Interacciones:
             for sitio in sitios:
                 if sitio.llevado_por is not None or self._fotograma - sitio.ultimo_fotograma != self.fotogramas_desaparecer:
                     continue
-                if not sitio.empezaba_a_moverse(self.movimiento_inicio, self.alto_minimo_relativo):
+                if not self._empezaba_a_moverse(sitio):
                     continue  # no se estaba moviendo, o encogía: solo lo han tapado
                 ultimo_centro = sitio.vistas[-1][1]
                 cercanas = [(dist(ultimo_centro, muneca), persona) for persona in personas

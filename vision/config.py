@@ -92,7 +92,8 @@ SUAVIZADO_SITIO = 0.05
 
 # Si al cogerlo YOLO deja de ver el producto (lo gira para mirarlo, la mano lo tapa...),
 # se le atribuye a la persona si, justo antes de desaparecer:
-#   - se estaba moviendo: en ~10 fotogramas avanzó MOVIMIENTO_INICIO veces su altura,
+#   - se estaba moviendo: en los ~10 o ~40 fotogramas anteriores avanzó MOVIMIENTO_INICIO
+#     veces su altura, descontando lo que se mueve la cámara (medido con los demás productos),
 #   - sin encogerse: su recuadro mide al menos ALTO_MINIMO_RELATIVO de lo normal
 #     (si encoge es que alguien lo tapa a medias al pasar por delante),
 #   - y había una muñeca cerca (DISTANCIA_DESAPARECER, fracción de la altura de la persona).
