@@ -10,10 +10,13 @@ Pulsa Q en la ventana para salir.
 
 import argparse
 import os
+import threading
 import time
 from collections import Counter, defaultdict
+from collections.abc import Callable
 
 import cv2
+import numpy as np
 
 import cliente_api
 import config
@@ -46,17 +49,34 @@ def main() -> None:
     fuente = args.fuente if args.fuente is not None else config.CAMARA
     if isinstance(fuente, str) and fuente.isdigit():
         fuente = int(fuente)  # "0" desde la terminal es la webcam, no un archivo
-    es_video = isinstance(fuente, str)
-    if es_video and not os.path.isfile(fuente):
+    if isinstance(fuente, str) and not os.path.isfile(fuente):
         raise SystemExit(f"No existe el vídeo {fuente!r}")
 
+    try:
+        procesar(fuente, mostrar=config.MOSTRAR_VENTANA and not args.sin_ventana,
+                 guardar=args.guardar, cobrar_al_final=args.cobrar_al_final)
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
+    finally:
+        cliente_api.cerrar()
+
+
+def procesar(fuente: str | int, *, mostrar: bool = False, guardar: str | None = None,
+             cobrar_al_final: bool = False,
+             al_fotograma: Callable[[np.ndarray, int, int], None] | None = None,
+             detener: threading.Event | None = None) -> None:
+    """Procesa una cámara o un vídeo de principio a fin. Lo usan main() y servidor.py.
+
+    al_fotograma(frame_pintado, fotograma, total) se llama en cada fotograma (el servidor lo
+    usa para enseñar el vídeo en la web) y detener permite pararlo desde fuera.
+    """
     camara = cv2.VideoCapture(fuente)
     if not camara.isOpened():
-        raise SystemExit(f"No se pudo abrir {fuente!r}. Cambia CAMARA en config.py o pasa la ruta de un vídeo")
+        raise ValueError(f"No se pudo abrir {fuente!r}. Cambia CAMARA en config.py o pasa la ruta de un vídeo")
 
+    es_video = isinstance(fuente, str)
     fps = camara.get(cv2.CAP_PROP_FPS) or 30
     total = int(camara.get(cv2.CAP_PROP_FRAME_COUNT)) if es_video else 0
-    mostrar = config.MOSTRAR_VENTANA and not args.sin_ventana
     escritor = None
 
     print("Cargando modelos (la primera vez se descargan)...")
@@ -69,7 +89,7 @@ def main() -> None:
 
     fotograma = 0
     try:
-        while True:
+        while detener is None or not detener.is_set():
             ok, frame = camara.read()
             if not ok:
                 break  # fin del vídeo o cámara desconectada
@@ -101,14 +121,17 @@ def main() -> None:
                 if config.FINALIZAR_AL_SALIR:
                     cliente_api.finalizar_compra(persona_id)
 
-            if mostrar or args.guardar:
+            if mostrar or guardar or al_fotograma:
                 dibujar(frame, personas, productos, resultado.duenos, carritos)
 
-            if args.guardar:
+            if guardar:
                 if escritor is None:
                     alto, ancho = frame.shape[:2]
-                    escritor = cv2.VideoWriter(args.guardar, cv2.VideoWriter_fourcc(*"mp4v"), fps, (ancho, alto))
+                    escritor = cv2.VideoWriter(guardar, cv2.VideoWriter_fourcc(*"mp4v"), fps, (ancho, alto))
                 escritor.write(frame)
+
+            if al_fotograma:
+                al_fotograma(frame, fotograma, total)
 
             if mostrar:
                 cv2.imshow(VENTANA, frame)
@@ -117,7 +140,7 @@ def main() -> None:
             elif es_video and fotograma % 100 == 0:
                 print(f"  {fotograma}/{total} fotogramas")
 
-        if args.cobrar_al_final:
+        if cobrar_al_final and (detener is None or not detener.is_set()):
             for persona_id in interacciones.personas_en_plano():
                 print(f"Fin del vídeo: se finaliza la compra de la persona {persona_id}")
                 cliente_api.finalizar_compra(persona_id)
@@ -125,9 +148,9 @@ def main() -> None:
         camara.release()
         if escritor is not None:
             escritor.release()
-            print(f"Vídeo guardado en {args.guardar}")
-        cv2.destroyAllWindows()
-        cliente_api.cerrar()
+            print(f"Vídeo guardado en {guardar}")
+        if mostrar:
+            cv2.destroyAllWindows()
 
 
 def elegir_video() -> str:

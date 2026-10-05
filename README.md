@@ -3,7 +3,7 @@
 Demo de carrito automático: una cámara detecta a la persona y la botella, y cada vez que la coge o la devuelve el carrito suma o resta en tiempo real.
 
 ```
-Cámara → vision/ (Python + YOLO) → POST /api/eventos → backend/ (Spring Boot + H2) → WebSocket → frontend/ (React)
+Vídeo subido desde la web → vision/ (Python + YOLO) → POST /api/eventos → backend/ (Spring Boot + H2) → WebSocket → frontend/ (React)
 ```
 
 ## Arrancar con Docker (recomendado)
@@ -16,10 +16,19 @@ docker compose up --build
 
 - **Front:** http://localhost:5173
 - **Backend:** http://localhost:8080 (Swagger en `/swagger-ui.html`, consola H2 en `/h2-console`)
+- **Visión:** http://localhost:8000 (recibe los vídeos que se suben desde la web)
 
-La primera vez tarda unos minutos porque descarga las imágenes y las dependencias. Las siguientes es casi instantáneo. Para pararlo, `docker compose down`. Para empezar con la base de datos vacía, `docker compose down -v`.
+La primera vez tarda bastante (unos 10 minutos) porque descarga PyTorch y los modelos de YOLO. Las siguientes es casi instantáneo. Para pararlo, `docker compose down`. Para empezar con la base de datos vacía, `docker compose down -v`.
 
-La visión se arranca aparte, en tu ordenador (ver [Visión](#visión)), porque Docker en Windows no puede usar la webcam ni abrir ventanas. Envía los eventos a `localhost:8080` igual que sin Docker.
+### Analizar un vídeo
+
+1. Abre http://localhost:5173 → **Visualización de sistema**.
+2. Arrastra un vídeo a **"Sube un vídeo de la tienda"** (o pulsa para elegirlo).
+3. Se analiza solo: arriba se ve el vídeo con las personas y los productos marcados, y abajo las cestas y la actividad se actualizan en directo. Con **Detener análisis** se para.
+
+Por defecto vacía las cestas antes de empezar (el tracker vuelve a numerar desde la persona 1) y, al acabar el vídeo, cobra a quien siga en el plano. Las dos cosas se pueden desmarcar.
+
+Si quieres usar la **webcam** en directo, eso sí tiene que ir fuera de Docker (ver [Visión](#visión)), porque Docker en Windows no puede acceder a la cámara.
 
 ## Arrancar sin Docker
 
@@ -27,7 +36,8 @@ La visión se arranca aparte, en tu ordenador (ver [Visión](#visión)), porque 
 |---|---|---|---|
 | Backend | JDK 21 | `cd backend && ./mvnw spring-boot:run` | http://localhost:8080 |
 | Frontend | Node 20+ | `cd frontend && npm install && npm run dev` | http://localhost:5173 |
-| Visión | Python 3.11+ y webcam | `cd vision && python main.py` (ver [Visión](#visión)) | Se abre una ventana |
+| Visión (subir vídeos desde la web) | Python 3.11+ | `cd vision && venv\Scripts\python servidor.py` | http://localhost:8000 |
+| Visión (webcam o terminal) | Python 3.11+ | `cd vision && venv\Scripts\python main.py` (ver [Visión](#visión)) | Se abre una ventana |
 
 Herramientas del backend:
 

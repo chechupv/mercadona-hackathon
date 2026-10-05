@@ -1,13 +1,20 @@
 """Ajustes de la visión. Todo lo que hay que tocar para afinar la demo está aquí."""
 
+import os
+
 # --- Backend ---
-BACKEND_URL = "http://localhost:8080"
+# Se puede cambiar con la variable de entorno BACKEND_URL (en Docker es http://backend:8080)
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8080")
 TIMEOUT_API = 2  # segundos
+
+# --- Servidor (servidor.py: recibe los vídeos que se suben desde la web) ---
+PUERTO_SERVIDOR = int(os.environ.get("PUERTO_SERVIDOR", "8000"))
+FRONT_ORIGIN = os.environ.get("FRONT_ORIGIN", "http://localhost:5173")  # quién puede llamarle (CORS)
 
 # --- Cámara ---
 # 0 = webcam del portátil, 1 = segunda cámara, o la ruta de un vídeo: "demo.mp4"
 CAMARA = 0
-MOSTRAR_VENTANA = True
+MOSTRAR_VENTANA = os.environ.get("MOSTRAR_VENTANA", "1") != "0"  # en Docker es 0: no hay pantalla
 
 # --- Modelos (se descargan solos la primera vez) ---
 MODELO_POSE = "yolo11n-pose.pt"   # personas + puntos del cuerpo (muñecas)

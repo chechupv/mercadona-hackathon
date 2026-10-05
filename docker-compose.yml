@@ -1,9 +1,8 @@
-# Arranca el backend y el frontend:   docker compose up --build
-# Pararlo:                            docker compose down
-# Borrar también la base de datos:    docker compose down -v
+# Arranca todo (backend, visión y frontend):   docker compose up --build
+# Pararlo:                                     docker compose down
+# Borrar también la base de datos:             docker compose down -v
 #
-# La visión (vision/) se ejecuta fuera de Docker, en tu ordenador: Docker en
-# Windows no puede usar la webcam ni abrir ventanas. Ver README.md.
+# Después abre http://localhost:5173 y sube un vídeo desde "Visualización de sistema".
 
 services:
   backend:
@@ -17,16 +16,31 @@ services:
       - backend-data:/app/data   # la base de datos sobrevive a docker compose down
     restart: unless-stopped
 
+  vision:
+    # Recibe los vídeos que se suben desde la web y envía los eventos al backend.
+    # La primera vez tarda en construirse: descarga PyTorch y los modelos de YOLO.
+    build: ./vision
+    ports:
+      - "8000:8000"
+    environment:
+      BACKEND_URL: http://backend:8080   # dentro de Docker el backend se llama "backend"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
   frontend:
     build:
       context: ./frontend
       args:
+        # Direcciones vistas desde el navegador (tu ordenador), no desde dentro de Docker
         VITE_API_URL: http://localhost:8080
+        VITE_VISION_URL: http://localhost:8000
     ports:
-      # Tiene que ser el 5173: es el origen que permite el CORS del backend
+      # Tiene que ser el 5173: es el origen que permiten el backend y la visión (CORS)
       - "5173:80"
     depends_on:
       - backend
+      - vision
     restart: unless-stopped
 
 volumes:
