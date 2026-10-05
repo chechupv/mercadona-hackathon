@@ -56,12 +56,28 @@ Al arrancar descarga los modelos de YOLO (unos 12 MB). Se abre una ventana con:
 
 Cómo decide el +1 y el −1 (`interaccion.py`):
 
-- **Coger (+1):** el centro de la botella está cerca de una muñeca durante `FOTOGRAMAS_COGER` fotogramas.
+- **Coger (+1):** el centro de la botella está cerca de una muñeca durante `FOTOGRAMAS_COGER` fotogramas **y desaparece una botella suelta de la escena** (la ha cogido de la mesa).
+- **Regalar:** si le aparece en la mano sin que falte ninguna en la mesa y a otra persona se le acaba de quedar la mano vacía, se la han dado. Como en Amazon Go, **paga quien la cogió de la estantería**: quien la recibe no paga. Si quien la recibe la deja en la mesa, se le resta a quien la pagaba.
 - **Dejarla (−1):** la botella ya no está en la mano **y aparece una botella suelta más en la escena** (la ha dejado en la mesa) durante `FOTOGRAMAS_SOLTAR` fotogramas.
 - **Llevársela:** si la botella simplemente deja de verse (la mano la tapa, la persona se gira o sale del plano con ella), sigue en el carrito.
 - **Salir:** si la persona desaparece `SEGUNDOS_SALIDA` segundos, se finaliza su compra. Si dejó algo en la mesa justo antes de irse, se resta antes de generar el ticket.
 
 Para que funcione, **la mesa tiene que verse en el plano**: si la botella se deja fuera de cámara, el sistema cree que se la ha llevado.
+
+### Productos que reconoce
+
+Con el modelo por defecto (`yolo11n.pt`) reconoce 15 productos de supermercado: `bottle`, `cup`, `wine glass`, `bowl`, `banana`, `apple`, `orange`, `broccoli`, `carrot`, `sandwich`, `hot dog`, `pizza`, `donut`, `cake` y `toothbrush`. Son clases genéricas: distingue una botella de un plátano, pero no una marca de otra.
+
+Para productos que no están en esa lista (un brick de leche, una lata de refresco…) se puede usar **YOLO-World**, que detecta lo que le escribas sin entrenar nada. En `config.py`:
+
+```python
+MODELO_OBJETOS = "yolov8s-worldv2.pt"
+PRODUCTOS = ["water bottle", "milk carton", "soda can", "banana"]
+```
+
+Escribe los nombres en inglés y añade cada uno, con el mismo texto, a `backend/src/main/resources/data.sql`. Es más lento que `yolo11n` (unos 200 ms por fotograma en CPU) y la primera vez instala una librería extra (necesita git e internet).
+
+Para añadir o quitar productos con el modelo normal, edita `PRODUCTOS` en `config.py` y `data.sql`: los dos tienen que tener los mismos códigos.
 
 Todo se ajusta en `config.py`:
 
@@ -97,9 +113,14 @@ python main.py videos/demo.mp4 --sin-ventana --guardar salida.mp4  # sin ventana
 { "personaId": 1, "producto": "bottle", "accion": "COGER" }
 ```
 
-- `accion` puede ser `COGER` o `DEVOLVER`.
+- `accion` puede ser `COGER`, `DEVOLVER` o `REGALAR`.
 - Devuelve el carrito actualizado de esa persona.
 - Un `DEVOLVER` de más se ignora: la cantidad nunca baja de 0.
+- `REGALAR` registra que una persona le da el producto a otra. No cambia ningún carrito, porque lo sigue pagando quien lo cogió. `personaId` es quien lo da y `receptorId` (obligatorio) quien lo recibe:
+
+```json
+{ "personaId": 1, "producto": "bottle", "accion": "REGALAR", "receptorId": 2 }
+```
 
 `POST /api/tickets`: finaliza la compra (por ejemplo, cuando la persona sale del plano).
 
@@ -129,7 +150,7 @@ STOMP en `ws://localhost:8080/ws`. Los mensajes se envían solo cuando el cambio
 | Topic | Cuándo | Contenido |
 |---|---|---|
 | `/topic/carritos` | Cualquier cambio en los carritos | Lista completa de carritos (sustituye el estado del front) |
-| `/topic/eventos` | Cada COGER o DEVOLVER | El evento, para mostrar "Persona 1 ha cogido Agua" |
+| `/topic/eventos` | Cada COGER, DEVOLVER o REGALAR | El evento, para mostrar "Persona 1 ha cogido Agua" o "Persona 1 le ha dado Agua a Persona 2" |
 | `/topic/tickets` | Cada compra finalizada | El ticket |
 
 ### Formatos
@@ -150,7 +171,7 @@ Carrito:
 Evento:
 
 ```json
-{ "id": 7, "personaId": 1, "producto": "bottle", "nombre": "Agua Solán de cabras 1,5 L", "accion": "COGER", "fecha": "2026-10-05T10:15:30Z" }
+{ "id": 7, "personaId": 1, "producto": "bottle", "nombre": "Agua Solán de cabras 1,5 L", "accion": "COGER", "receptorId": null, "fecha": "2026-10-05T10:15:30Z" }
 ```
 
 Ticket: los mismos campos que el carrito, más `id` y `fecha`.

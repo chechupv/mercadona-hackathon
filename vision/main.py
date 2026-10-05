@@ -83,13 +83,17 @@ def main() -> None:
             resultado = interacciones.actualizar(personas, productos, ahora)
 
             for evento in resultado.eventos:
-                print(f"Persona {evento.persona_id}: {evento.accion} {evento.producto}")
                 carrito = carritos[evento.persona_id]
-                if evento.accion == "COGER":
-                    carrito[evento.producto] += 1
-                elif carrito[evento.producto] > 0:
-                    carrito[evento.producto] -= 1
-                cliente_api.enviar_evento(evento.persona_id, evento.producto, evento.accion)
+                if evento.accion == "REGALAR":
+                    print(f"Persona {evento.persona_id} le da {evento.producto} a la persona {evento.receptor_id} "
+                          f"(lo sigue pagando quien lo cogió)")
+                else:
+                    print(f"Persona {evento.persona_id}: {evento.accion} {evento.producto}")
+                    if evento.accion == "COGER":
+                        carrito[evento.producto] += 1
+                    elif carrito[evento.producto] > 0:
+                        carrito[evento.producto] -= 1
+                cliente_api.enviar_evento(evento.persona_id, evento.producto, evento.accion, evento.receptor_id)
 
             for persona_id in resultado.salidas:
                 print(f"Persona {persona_id} ha salido del plano")

@@ -44,6 +44,10 @@ class Detector:
         self.modelo_pose = YOLO(config.MODELO_POSE)
         self.modelo_objetos = YOLO(config.MODELO_OBJETOS)
 
+        # YOLO-World no tiene clases fijas: detecta los textos que le pasemos
+        if "world" in config.MODELO_OBJETOS.lower():
+            self.modelo_objetos.set_classes(config.PRODUCTOS)
+
         nombres = self.modelo_objetos.names  # {id: "bottle", ...}
         desconocidos = set(config.PRODUCTOS) - set(nombres.values())
         if desconocidos:

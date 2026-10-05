@@ -95,6 +95,7 @@
 .activity-badge { display: grid; width: 28px; height: 22px; flex: 0 0 28px; place-items: center; border-radius: 99px; font-size: 10px; font-weight: 750; }
 .activity-badge.is-add { background: rgba(217, 233, 168, 0.16); color: #dce8a6; }
 .activity-badge.is-remove { background: rgba(241, 188, 56, 0.16); color: #f1bc38; }
+.activity-badge.is-gift { background: rgba(255, 255, 255, 0.14); color: #fff; }
 @keyframes entrar { from { opacity: 0; transform: translateY(-4px); } }
 
 /* Ticket */

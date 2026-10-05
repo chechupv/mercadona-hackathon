@@ -39,12 +39,15 @@ public class EventoService {
         // Lanza ProductoDesconocidoException (400) si YOLO manda algo que no está en el catálogo
         Producto producto = productoService.buscar(evento.producto());
 
-        Evento guardado = eventoRepository.save(new Evento(evento.personaId(), evento.producto(), evento.accion()));
+        Evento guardado = eventoRepository.save(
+                new Evento(evento.personaId(), evento.producto(), evento.accion(), evento.receptorId()));
         eventPublisher.publishEvent(new Notificacion(TOPIC, EventoResponse.from(guardado, producto.getNombre())));
 
         return switch (evento.accion()) {
             case COGER -> carritoService.sumar(evento.personaId(), evento.producto());
             case DEVOLVER -> carritoService.restar(evento.personaId(), evento.producto());
+            // Paga quien lo cogió de la estantería (como en Amazon Go): ningún carrito cambia
+            case REGALAR -> carritoService.obtener(evento.personaId());
         };
     }
 

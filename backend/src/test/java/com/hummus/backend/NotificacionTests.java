@@ -68,7 +68,7 @@ class NotificacionTests {
     @Test
     void unEventoQueFallaNoEnviaNada() throws Exception {
         mvc.perform(post("/api/eventos").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"personaId\":1,\"producto\":\"banana\",\"accion\":\"COGER\"}"))
+                .content("{\"personaId\":1,\"producto\":\"laptop\",\"accion\":\"COGER\"}"))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(messagingTemplate);

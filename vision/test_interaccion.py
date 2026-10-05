@@ -18,12 +18,20 @@ def botella(x: float, y: float) -> Producto:
     return Producto("bottle", (x - 15, y - 40, x + 15, y + 40), 0.8)
 
 
+PERSONA_3 = Persona(3, (1000, 100, 1200, 500), [(1100, 300)])
+
 EN_MANO_1 = botella(310, 310)
+EN_MANO_2 = botella(710, 310)
+EN_MANO_3 = botella(1110, 310)
 EN_LA_MESA = botella(500, 450)
 OTRA_EN_LA_MESA = botella(550, 450)
 
 COGER = Evento(1, "bottle", "COGER")
 DEVOLVER = Evento(1, "bottle", "DEVOLVER")
+
+
+def regalo(de: int, a: int) -> Evento:
+    return Evento(de, "bottle", "REGALAR", receptor_id=a)
 
 
 class InteraccionesTests(unittest.TestCase):
@@ -123,6 +131,52 @@ class InteraccionesTests(unittest.TestCase):
         self.fotogramas(6, [dos_manos], [EN_LA_MESA])
         resultado = self.sale_del_plano([EN_LA_MESA])
         self.assertEqual(resultado.eventos, [DEVOLVER])
+
+    # --- Regalos (paga quien lo coge de la estantería, como en Amazon Go) ---
+
+    def coger_de_la_mesa_y_darselo_a_la_2(self) -> list[Evento]:
+        dos = [PERSONA_1, PERSONA_2]
+        eventos = self.fotogramas(10, dos, [EN_LA_MESA])
+        eventos += self.fotogramas(8, dos, [EN_MANO_1])   # la 1 la coge de la mesa
+        eventos += self.fotogramas(8, dos, [EN_MANO_2])   # se la da a la 2
+        return eventos
+
+    def test_darle_el_producto_a_otra_persona_es_un_regalo(self) -> None:
+        # La 1 paga (COGER); la 2 lo recibe sin pagar (REGALAR, sin COGER para la 2)
+        self.assertEqual(self.coger_de_la_mesa_y_darselo_a_la_2(), [COGER, regalo(1, 2)])
+
+    def test_si_quien_lo_recibe_se_lo_lleva_lo_sigue_pagando_quien_lo_cogio(self) -> None:
+        self.coger_de_la_mesa_y_darselo_a_la_2()
+        eventos = self.fotogramas(20, [PERSONA_1, PERSONA_2], [EN_MANO_2])
+        eventos += self.fotogramas(80, [PERSONA_1], [])  # la 2 sale del plano con el regalo
+        self.assertEqual(eventos, [])  # ningún DEVOLVER: la 1 lo sigue pagando
+
+    def test_si_quien_lo_recibe_lo_deja_en_la_mesa_se_resta_a_quien_lo_pagaba(self) -> None:
+        self.coger_de_la_mesa_y_darselo_a_la_2()
+        eventos = self.fotogramas(30, [PERSONA_1, PERSONA_2], [EN_LA_MESA])
+        self.assertEqual(eventos, [DEVOLVER])  # se resta a la persona 1, no a la 2
+
+    def test_si_se_lo_devuelve_ya_no_es_un_regalo(self) -> None:
+        dos = [PERSONA_1, PERSONA_2]
+        self.coger_de_la_mesa_y_darselo_a_la_2()
+        self.assertEqual(self.fotogramas(8, dos, [EN_MANO_1]), [regalo(2, 1)])
+        # Ahora la tiene quien la paga: si la deja en la mesa, se le resta a ella
+        self.assertEqual(self.fotogramas(30, dos, [EN_LA_MESA]), [DEVOLVER])
+
+    def test_un_regalo_de_un_regalo_lo_sigue_pagando_el_primero(self) -> None:
+        tres = [PERSONA_1, PERSONA_2, PERSONA_3]
+        eventos = self.fotogramas(10, tres, [EN_LA_MESA])
+        eventos += self.fotogramas(8, tres, [EN_MANO_1])
+        eventos += self.fotogramas(8, tres, [EN_MANO_2])
+        eventos += self.fotogramas(8, tres, [EN_MANO_3])
+        eventos += self.fotogramas(30, tres, [EN_LA_MESA])  # la 3 la deja en la mesa
+        self.assertEqual(eventos, [COGER, regalo(1, 2), regalo(2, 3), DEVOLVER])
+
+    def test_cada_uno_paga_lo_que_coge_de_la_mesa(self) -> None:
+        dos = [PERSONA_1, PERSONA_2]
+        eventos = self.fotogramas(10, dos, [EN_LA_MESA, OTRA_EN_LA_MESA])
+        eventos += self.fotogramas(10, dos, [EN_MANO_1, EN_MANO_2])  # cada una coge una
+        self.assertEqual(sorted(eventos, key=lambda e: e.persona_id), [COGER, Evento(2, "bottle", "COGER")])
 
     # --- Salida ---
 

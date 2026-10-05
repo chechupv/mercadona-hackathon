@@ -14,8 +14,23 @@ MODELO_POSE = "yolo11n-pose.pt"   # personas + puntos del cuerpo (muñecas)
 MODELO_OBJETOS = "yolo11n.pt"     # productos
 TRACKER = "botsort.yaml"          # mantiene el mismo ID de persona entre fotogramas
 
-# Clases de YOLO que cuentan como producto. Tienen que existir en data.sql del backend.
-PRODUCTOS = ["bottle", "cup"]
+# Clases que cuentan como producto. Cada una tiene que existir como "codigo" en
+# backend/src/main/resources/data.sql, o el backend responderá "Producto desconocido".
+#
+# Con yolo11n.pt solo valen las clases de COCO (80 objetos genéricos). Estas son las que
+# tienen sentido en un supermercado:
+PRODUCTOS = [
+    "bottle", "cup", "wine glass", "bowl",
+    "banana", "apple", "orange", "broccoli", "carrot",
+    "sandwich", "hot dog", "pizza", "donut", "cake",
+    "toothbrush",
+]
+
+# Para productos que COCO no conoce (un brick de leche, una lata...), usa YOLO-World:
+# detecta lo que le escribas, sin entrenar. Es más lento que yolo11n.
+#   MODELO_OBJETOS = "yolov8s-worldv2.pt"
+#   PRODUCTOS = ["water bottle", "milk carton", "soda can", "banana"]
+# Escribe los nombres en inglés y añádelos con ese mismo texto a data.sql.
 
 # --- Detección ---
 CONFIANZA_PERSONA = 0.5

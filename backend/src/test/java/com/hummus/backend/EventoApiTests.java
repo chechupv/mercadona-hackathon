@@ -62,6 +62,45 @@ class EventoApiTests {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void regalarNoCambiaNingunCarritoYQuedaEnElHistorial() throws Exception {
+        evento(1, "bottle", "COGER");
+
+        mvc.perform(post("/api/eventos").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"personaId\":1,\"producto\":\"bottle\",\"accion\":\"REGALAR\",\"receptorId\":2}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.personaId").value(1))
+                .andExpect(jsonPath("$.totalUnidades").value(1));
+
+        // La botella la sigue pagando la persona 1; la 2 no tiene carrito
+        mvc.perform(get("/api/carritos/1")).andExpect(jsonPath("$.totalUnidades").value(1));
+        mvc.perform(get("/api/carritos/2")).andExpect(status().isNotFound());
+
+        mvc.perform(get("/api/eventos"))
+                .andExpect(jsonPath("$[0].accion").value("REGALAR"))
+                .andExpect(jsonPath("$[0].receptorId").value(2))
+                .andExpect(jsonPath("$[1].receptorId").doesNotExist());
+    }
+
+    @Test
+    void regalarSinReceptorOASiMismoDevuelve400() throws Exception {
+        mvc.perform(post("/api/eventos").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"personaId\":1,\"producto\":\"bottle\",\"accion\":\"REGALAR\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errores[0]").value(
+                        "receptorValido: receptorId es obligatorio en REGALAR y tiene que ser distinto de personaId"));
+        mvc.perform(post("/api/eventos").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"personaId\":1,\"producto\":\"bottle\",\"accion\":\"REGALAR\",\"receptorId\":1}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void elCatalogoIncluyeLosProductosNuevos() throws Exception {
+        evento(1, "banana", "COGER");
+        evento(1, "wine glass", "COGER");
+        mvc.perform(get("/api/carritos/1")).andExpect(jsonPath("$.totalUnidades").value(2));
+    }
+
     private void evento(long personaId, String producto, String accion) throws Exception {
         mvc.perform(post("/api/eventos").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"personaId\":%d,\"producto\":\"%s\",\"accion\":\"%s\"}"

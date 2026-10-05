@@ -11,11 +11,13 @@ import config
 _executor = ThreadPoolExecutor(max_workers=1)
 
 
-def enviar_evento(persona_id: int, producto: str, accion: str) -> None:
-    """accion: "COGER" o "DEVOLVER"."""
+def enviar_evento(persona_id: int, producto: str, accion: str, receptor_id: int | None = None) -> None:
+    """accion: "COGER", "DEVOLVER" o "REGALAR" (en REGALAR hay que indicar receptor_id)."""
     # int() porque el ID del tracker puede ser un tipo de numpy que requests no sabe convertir
-    _executor.submit(_post, "/api/eventos",
-                     {"personaId": int(persona_id), "producto": producto, "accion": accion})
+    cuerpo = {"personaId": int(persona_id), "producto": producto, "accion": accion}
+    if receptor_id is not None:
+        cuerpo["receptorId"] = int(receptor_id)
+    _executor.submit(_post, "/api/eventos", cuerpo)
 
 
 def finalizar_compra(persona_id: int) -> None:
