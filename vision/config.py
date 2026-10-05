@@ -44,7 +44,7 @@ VARIANTES = {
 CARPETA_REFERENCIAS = "referencias"
 # Cuánto se tiene que parecer a una foto de ejemplo (0 = idéntico, 1 = nada que ver).
 # Si confunde productos, bájalo; si deja de reconocer alguno, súbelo.
-DISTANCIA_MAXIMA_VARIANTE = 0.8
+DISTANCIA_MAXIMA_VARIANTE = 0.65
 
 
 def codigos_de_producto() -> list[str]:

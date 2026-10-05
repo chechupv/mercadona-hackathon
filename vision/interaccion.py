@@ -56,22 +56,36 @@ class _Sitio:
     llevado_por: int | None = None      # persona a la que se le ha atribuido al desaparecer
     # Últimas veces que se vio suelto aquí: (fotograma, centro, altura)
     vistas: deque = field(default_factory=lambda: deque(maxlen=30))
+    # Dónde estaba el producto cuando se le acercó una mano (y hasta cuándo siguió cerca)
+    anclaje: tuple[float, float] | None = None
+    ultima_mano: int = 0
 
-    def ver(self, fotograma: int, centro: tuple[float, float], alto: float) -> None:
+    def ver(self, fotograma: int, centro: tuple[float, float], alto: float, mano_cerca: bool) -> None:
         self.ultimo_fotograma = fotograma
         self.vistas.append((fotograma, centro, alto))
+        if mano_cerca:
+            if self.anclaje is None:
+                self.anclaje = centro
+            self.ultima_mano = fotograma
+        elif fotograma - self.ultima_mano > 30:
+            self.anclaje = None  # la mano se fue hace rato: el próximo acercamiento empieza de cero
 
     def empezaba_a_moverse(self, movimiento_minimo: float, alto_minimo: float) -> bool:
-        """Justo antes de desaparecer se estaba moviendo (en los ~10 fotogramas anteriores)
-        sin encogerse. Si el recuadro encoge es que lo tapaban a medias, no que lo levantaran."""
+        """Justo antes de desaparecer se estaba moviendo sin encogerse. "Moverse" es haber
+        avanzado en los ~10 fotogramas anteriores, o respecto a donde estaba cuando se acercó
+        la mano (así también se detecta a quien lo levanta muy despacio). Si el recuadro
+        encoge es que lo tapaban a medias, no que lo levantaran."""
         fotograma, centro, alto = self.vistas[-1]
         antes = [c for f, c, _ in self.vistas if fotograma - 12 <= f <= fotograma - 8]
         altos = sorted(a for f, _, a in self.vistas if f < fotograma - 3)
-        if not antes or not altos:
+        if not altos:
             return False
         alto_normal = altos[len(altos) // 2]
-        return (dist(centro, antes[0]) >= movimiento_minimo * alto_normal
-                and alto >= alto_minimo * alto_normal)
+        if alto < alto_minimo * alto_normal:
+            return False
+        minimo = movimiento_minimo * alto_normal
+        return bool((antes and dist(centro, antes[0]) >= minimo)
+                    or (self.anclaje is not None and dist(centro, self.anclaje) >= minimo))
 
 
 @dataclass
@@ -100,7 +114,7 @@ class Interacciones:
 
     def actualizar(self, personas: list[Persona], productos: list[Producto], ahora: float) -> ResultadoFotograma:
         duenos = self._asignar_duenos(personas, productos)
-        self._recordar_reposo(productos, duenos)
+        self._recordar_reposo(productos, duenos, personas)
         self._detectar_desapariciones(personas)
 
         en_mano: dict[tuple[int, str], int] = {}
@@ -157,7 +171,7 @@ class Interacciones:
         mano aunque haya una muñeca cerca (p. ej. al alargar el brazo para coger el de al lado)."""
         return self._sitio_cercano(producto) is not None
 
-    def _recordar_reposo(self, productos: list[Producto], duenos: dict[int, int]) -> None:
+    def _recordar_reposo(self, productos: list[Producto], duenos: dict[int, int], personas: list[Persona]) -> None:
         self._fotograma += 1
         for indice, producto in enumerate(productos):
             if indice in duenos or producto.clase not in self._sitios:
@@ -173,7 +187,9 @@ class Interacciones:
                 (x, y), (nx, ny), a = sitio.punto, producto.centro, self.suavizado_sitio
                 sitio.punto = (x + (nx - x) * a, y + (ny - y) * a)
                 sitio.llevado_por = None  # se ve suelto en su sitio: nadie lo lleva
-            sitio.ver(self._fotograma, producto.centro, alto)
+            mano_cerca = any(dist(producto.centro, muneca) <= self.distancia_desaparecer * persona.altura
+                             for persona in personas for muneca in persona.munecas)
+            sitio.ver(self._fotograma, producto.centro, alto, mano_cerca)
         # Se olvidan los sitios que llevan mucho sin verse (el producto se fue o la cámara se movió)
         for clase, sitios in self._sitios.items():
             self._sitios[clase] = [s for s in sitios if self._fotograma - s.ultimo_fotograma <= self.fotogramas_reposo]
