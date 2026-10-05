@@ -80,6 +80,23 @@ class InteraccionesTests(unittest.TestCase):
         eventos = self.fotogramas(8, [PERSONA_1, PERSONA_2], [botella(690, 310)])
         self.assertEqual(eventos, [Evento(2, "bottle", "COGER")])
 
+    def test_un_producto_que_sigue_en_su_sitio_no_esta_en_la_mano(self) -> None:
+        # La botella está en la mesa; llega alguien y deja la muñeca justo al lado
+        # (p. ej. al alargar el brazo para coger la de al lado)
+        al_lado = botella(320, 320)
+        self.fotogramas(10, [], [al_lado])
+        self.assertEqual(self.fotogramas(40, [PERSONA_1], [al_lado]), [])
+
+    def test_levantarlo_poco_a_poco_si_cuenta(self) -> None:
+        # Está en la mesa, llega alguien, pone la mano al lado y la levanta despacio (3 px por fotograma)
+        self.fotogramas(10, [], [botella(320, 330)])
+        self.assertEqual(self.fotogramas(10, [PERSONA_1], [botella(320, 330)]), [])
+        eventos = []
+        for paso in range(1, 40):
+            mano = Persona(1, (200, 100, 400, 500), [(310, 320 - 3 * paso)])
+            eventos += self.fotogramas(1, [mano], [botella(320, 330 - 3 * paso)])
+        self.assertEqual(eventos, [COGER])
+
     # --- Dejarla en la mesa: resta ---
 
     def test_dejarla_en_la_mesa_resta(self) -> None:

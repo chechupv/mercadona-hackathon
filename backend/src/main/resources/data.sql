@@ -1,6 +1,11 @@
 -- Catálogo de la demo. "codigo" es la clase que detecta YOLO (tiene que coincidir con
 -- PRODUCTOS en vision/config.py). MERGE inserta o actualiza, así no falla al arrancar otra vez.
 MERGE INTO producto (codigo, nombre, precio) KEY (codigo) VALUES
+    -- Variantes de "bottle" que distingue el clasificador visual (vision/referencias/)
+    ('agua', 'Agua mineral 1,5 L', 0.45),
+    ('cantimplora', 'Cantimplora de aluminio 500 ml', 6.95),
+    ('solan', 'Agua Solán de Cabras 1 L', 1.25),
+    ('cocacola', 'Coca-Cola 500 ml', 1.30),
     -- Bebidas y menaje
     ('bottle', 'Agua Solán de cabras 1,5 L', 0.45),
     ('cup', 'Café con leche', 1.20),

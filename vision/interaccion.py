@@ -48,21 +48,35 @@ class _Estado:
 
 
 @dataclass
+class _Sitio:
+    """Un sitio donde ha estado un producto suelto (p. ej. su hueco en la mesa)."""
+    punto: tuple[float, float]
+    ultimo_fotograma: int
+
+
+@dataclass
 class Interacciones:
-    productos: list[str] = field(default_factory=lambda: list(config.PRODUCTOS))
+    productos: list[str] = field(default_factory=config.codigos_de_producto)
     distancia_muneca: float = config.DISTANCIA_MUNECA
     fotogramas_coger: int = config.FOTOGRAMAS_COGER
     fotogramas_soltar: int = config.FOTOGRAMAS_SOLTAR
     segundos_salida: float = config.SEGUNDOS_SALIDA
     ventana_libres: int = config.VENTANA_LIBRES
+    desplazamiento_coger: float = config.DESPLAZAMIENTO_COGER
+    fotogramas_reposo: int = config.FOTOGRAMAS_REPOSO
+    suavizado_sitio: float = config.SUAVIZADO_SITIO
 
     def __post_init__(self) -> None:
         self._estados: dict[tuple[int, str], _Estado] = {}
         self._ultima_vez: dict[int, float] = {}
         self._historial_libres = {clase: deque(maxlen=self.ventana_libres) for clase in self.productos}
+        # Sitios donde han estado los productos sueltos (sus huecos en la mesa)
+        self._sitios: dict[str, list[_Sitio]] = {clase: [] for clase in self.productos}
+        self._fotograma = 0
 
     def actualizar(self, personas: list[Persona], productos: list[Producto], ahora: float) -> ResultadoFotograma:
         duenos = self._asignar_duenos(personas, productos)
+        self._recordar_reposo(productos, duenos)
 
         en_mano: dict[tuple[int, str], int] = {}
         libres = {clase: 0 for clase in self.productos}
@@ -107,10 +121,41 @@ class Interacciones:
 
     # --- Quién tiene qué en la mano ---
 
+    def _sitio_cercano(self, producto: Producto) -> _Sitio | None:
+        alto = producto.caja[3] - producto.caja[1]
+        sitios = [s for s in self._sitios.get(producto.clase, [])
+                  if dist(producto.centro, s.punto) < self.desplazamiento_coger * alto]
+        return min(sitios, key=lambda s: dist(producto.centro, s.punto), default=None)
+
+    def _en_reposo(self, producto: Producto) -> bool:
+        """Sigue en el sitio donde estaba suelto: no se ha movido, así que no está en ninguna
+        mano aunque haya una muñeca cerca (p. ej. al alargar el brazo para coger el de al lado)."""
+        return self._sitio_cercano(producto) is not None
+
+    def _recordar_reposo(self, productos: list[Producto], duenos: dict[int, int]) -> None:
+        self._fotograma += 1
+        for indice, producto in enumerate(productos):
+            if indice in duenos or producto.clase not in self._sitios:
+                continue
+            sitio = self._sitio_cercano(producto)
+            if sitio is None:
+                self._sitios[producto.clase].append(_Sitio(producto.centro, self._fotograma))
+                continue
+            # El sitio se acerca muy despacio a donde se ve el producto: así sigue la deriva lenta
+            # de la cámara, pero no a una botella que alguien está levantando poco a poco
+            (x, y), (nx, ny), a = sitio.punto, producto.centro, self.suavizado_sitio
+            sitio.punto = (x + (nx - x) * a, y + (ny - y) * a)
+            sitio.ultimo_fotograma = self._fotograma
+        # Se olvidan los sitios que llevan mucho sin verse (el producto se fue o la cámara se movió)
+        for clase, sitios in self._sitios.items():
+            self._sitios[clase] = [s for s in sitios if self._fotograma - s.ultimo_fotograma <= self.fotogramas_reposo]
+
     def _asignar_duenos(self, personas: list[Persona], productos: list[Producto]) -> dict[int, int]:
-        """Asigna cada producto a la muñeca más cercana, si está lo bastante cerca."""
+        """Asigna cada producto que se ha movido a la muñeca más cercana, si está lo bastante cerca."""
         duenos: dict[int, int] = {}
         for indice, producto in enumerate(productos):
+            if self._en_reposo(producto):
+                continue
             dueno, mejor_distancia = None, inf
             for persona in personas:
                 limite = self.distancia_muneca * persona.altura

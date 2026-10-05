@@ -32,10 +32,33 @@ PRODUCTOS = [
 #   PRODUCTOS = ["water bottle", "milk carton", "soda can", "banana"]
 # Escribe los nombres en inglés y añádelos con ese mismo texto a data.sql.
 
+# --- Variantes: productos que YOLO ve iguales y se distinguen por su aspecto ---
+# Ejemplo: YOLO llama "bottle" al agua, a la cantimplora y a la Coca-Cola. Cada una se
+# distingue comparando su color con fotos de ejemplo en referencias/<codigo>/
+# (créalas con crear_referencias.py). Al backend se envía el código de la variante,
+# que tiene que existir en data.sql. Las botellas que no se parecen a ninguna se ignoran.
+# Deja el diccionario vacío ({}) para no usar variantes.
+VARIANTES = {
+    "bottle": ["agua", "cantimplora", "solan", "cocacola"],
+}
+CARPETA_REFERENCIAS = "referencias"
+# Cuánto se tiene que parecer a una foto de ejemplo (0 = idéntico, 1 = nada que ver).
+# Si confunde productos, bájalo; si deja de reconocer alguno, súbelo.
+DISTANCIA_MAXIMA_VARIANTE = 0.8
+
+
+def codigos_de_producto() -> list[str]:
+    """Lo que se envía al backend: cada clase de PRODUCTOS, o sus variantes si las tiene."""
+    return [codigo for clase in PRODUCTOS for codigo in VARIANTES.get(clase, [clase])]
+
+
 # --- Detección ---
 CONFIANZA_PERSONA = 0.5
 CONFIANZA_PRODUCTO = 0.3   # bajo a propósito: una botella en la mano se ve peor
 CONFIANZA_MUNECA = 0.5
+# Resolución a la que YOLO busca productos. 640 es lo normal; súbela (960, 1280) si los
+# productos salen pequeños en el vídeo. Más alta = detecta mejor pero va más lento.
+TAMANO_IMAGEN = 960
 
 # --- Cuándo se considera que la persona tiene el producto en la mano ---
 # Distancia máxima entre el centro del producto y la muñeca, como fracción de la
@@ -43,6 +66,17 @@ CONFIANZA_MUNECA = 0.5
 # Si no detecta que has cogido la botella, súbelo. Si suma botellas que están
 # solo cerca, bájalo.
 DISTANCIA_MUNECA = 0.15
+
+# Un producto solo puede estar "en la mano" si se ha movido del sitio donde estaba suelto:
+# así no se cuenta el producto de al lado cuando alguien alarga el brazo para coger otro.
+# Tiene que haberse desplazado esta fracción de su propia altura (0.5 = media botella).
+DESPLAZAMIENTO_COGER = 0.5
+# Cuántos fotogramas se recuerda un sitio sin ver el producto (150 = 5 s a 30 fps):
+# así no se olvida un producto solo porque alguien lo tape un momento.
+FOTOGRAMAS_REPOSO = 150
+# Lo rápido que el sitio sigue al producto (0-1). Bajo para seguir la deriva lenta de la
+# cámara pero no a una botella que alguien está levantando poco a poco.
+SUAVIZADO_SITIO = 0.05
 
 # Fotogramas seguidos que tiene que mantenerse el cambio para contarlo.
 # Soltar pide más porque la mano tapa la botella a ratos y YOLO la pierde.

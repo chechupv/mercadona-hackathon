@@ -98,7 +98,12 @@ class EventoApiTests {
     void elCatalogoIncluyeLosProductosNuevos() throws Exception {
         evento(1, "banana", "COGER");
         evento(1, "wine glass", "COGER");
-        mvc.perform(get("/api/carritos/1")).andExpect(jsonPath("$.totalUnidades").value(2));
+        for (String variante : new String[] { "agua", "cantimplora", "solan", "cocacola" }) {
+            evento(1, variante, "COGER");
+        }
+        mvc.perform(get("/api/carritos/1"))
+                .andExpect(jsonPath("$.totalUnidades").value(6))
+                .andExpect(jsonPath("$.total").value(0.35 + 1.50 + 0.45 + 6.95 + 1.25 + 1.30));
     }
 
     private void evento(long personaId, String producto, String accion) throws Exception {

@@ -56,7 +56,7 @@ Al arrancar descarga los modelos de YOLO (unos 12 MB). Se abre una ventana con:
 
 Cómo decide el +1 y el −1 (`interaccion.py`):
 
-- **Coger (+1):** el centro de la botella está cerca de una muñeca durante `FOTOGRAMAS_COGER` fotogramas **y desaparece una botella suelta de la escena** (la ha cogido de la mesa).
+- **Coger (+1):** la botella **se ha movido de su sitio en la mesa**, su centro está cerca de una muñeca durante `FOTOGRAMAS_COGER` fotogramas **y desaparece una botella suelta de la escena**. Que tenga que moverse evita contar la botella de al lado cuando alguien alarga el brazo para coger otra.
 - **Regalar:** si le aparece en la mano sin que falte ninguna en la mesa y a otra persona se le acaba de quedar la mano vacía, se la han dado. Como en Amazon Go, **paga quien la cogió de la estantería**: quien la recibe no paga. Si quien la recibe la deja en la mesa, se le resta a quien la pagaba.
 - **Dejarla (−1):** la botella ya no está en la mano **y aparece una botella suelta más en la escena** (la ha dejado en la mesa) durante `FOTOGRAMAS_SOLTAR` fotogramas.
 - **Llevársela:** si la botella simplemente deja de verse (la mano la tapa, la persona se gira o sale del plano con ella), sigue en el carrito.
@@ -79,6 +79,24 @@ Escribe los nombres en inglés y añade cada uno, con el mismo texto, a `backend
 
 Para añadir o quitar productos con el modelo normal, edita `PRODUCTOS` en `config.py` y `data.sql`: los dos tienen que tener los mismos códigos.
 
+### Distinguir productos que YOLO ve iguales (variantes)
+
+YOLO llama `bottle` igual al agua, a una cantimplora o a una Coca-Cola. Para distinguirlas, cada botella detectada se compara por color con **fotos de ejemplo** guardadas en `vision/referencias/<codigo>/`. No hay que entrenar nada: para enseñarle un producto nuevo, basta con añadir su foto.
+
+1. Graba un vídeo con los productos en la mesa, sin tapar.
+2. Crea las fotos de ejemplo a partir de un fotograma, dando los nombres **de izquierda a derecha**:
+   ```bash
+   venv\Scripts\python crear_referencias.py video.mp4 --fotograma 0 --nombres agua cantimplora solan cocacola
+   ```
+   Abre `referencias/vista_previa.jpg` para comprobar que cada nombre ha caído en su producto. Conviene repetirlo con 2 o 3 fotogramas distintos (más cerca, más lejos) para que sea más fiable.
+3. Pon los mismos códigos en `VARIANTES` de `config.py`:
+   ```python
+   VARIANTES = {"bottle": ["agua", "cantimplora", "solan", "cocacola"]}
+   ```
+4. Añade cada código con su nombre y precio a `data.sql`.
+
+Si confunde productos, baja `DISTANCIA_MAXIMA_VARIANTE`; si deja de reconocer alguno cuando está en la mano, súbelo. Para no usar variantes, deja `VARIANTES = {}`.
+
 Todo se ajusta en `config.py`:
 
 | Problema | Qué tocar |
@@ -86,7 +104,7 @@ Todo se ajusta en `config.py`:
 | No detecta que has cogido la botella | Sube `DISTANCIA_MUNECA` o baja `CONFIANZA_PRODUCTO` |
 | Suma una botella que solo está cerca | Baja `DISTANCIA_MUNECA` |
 | Suma y resta solo | Sube `FOTOGRAMAS_COGER` y `FOTOGRAMAS_SOLTAR` |
-Para probar la lógica sin cámara: `python -m unittest test_interaccion`.
+Para probar la lógica sin cámara: `python -m unittest test_interaccion test_detector`.
 
 ### Con vídeos grabados
 
