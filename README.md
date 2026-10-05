@@ -12,7 +12,7 @@ Cámara → vision/ (Python + YOLO) → POST /api/eventos → backend/ (Spring B
 |---|---|---|---|
 | Backend | JDK 21 | `cd backend && ./mvnw spring-boot:run` | http://localhost:8080 |
 | Frontend | Node 20+ | `cd frontend && npm install && npm run dev` | http://localhost:5173 |
-| Visión | Python 3.11+ | `cd vision && pip install -r requirements.txt && python main.py` | — |
+| Visión | Python 3.11+ y webcam | `cd vision && python main.py` (ver [Visión](#visión)) | Se abre una ventana |
 
 Herramientas del backend:
 
@@ -21,6 +21,36 @@ Herramientas del backend:
 - **Tests**: `cd backend && ./mvnw test`
 
 El catálogo de productos está en `backend/src/main/resources/data.sql`. El `codigo` de cada producto tiene que ser la clase que detecta YOLO (`bottle`, `cup`…).
+
+## Visión
+
+La primera vez, crea un entorno virtual dentro de `vision/`:
+
+```bash
+python -m venv venv
+venv\Scripts\activate          # en Mac/Linux: source venv/bin/activate
+pip install -r requirements.txt
+python main.py
+```
+
+Al arrancar descarga los modelos de YOLO (unos 12 MB). Se abre una ventana con:
+
+- **Recuadro verde:** la persona, con su ID y su carrito.
+- **Puntos azules:** las muñecas.
+- **Recuadro naranja:** un producto en la mano de alguien (`-> P1`). Gris si está suelto.
+
+Cómo decide el +1 y el −1 (`interaccion.py`): si el centro de la botella está cerca de una muñeca durante `FOTOGRAMAS_COGER` fotogramas, suma. Si deja de estarlo durante `FOTOGRAMAS_SOLTAR`, resta. Si la persona desaparece `SEGUNDOS_SALIDA` segundos, se finaliza su compra.
+
+Todo se ajusta en `config.py`:
+
+| Problema | Qué tocar |
+|---|---|
+| No detecta que has cogido la botella | Sube `DISTANCIA_MUNECA` o baja `CONFIANZA_PRODUCTO` |
+| Suma una botella que solo está cerca | Baja `DISTANCIA_MUNECA` |
+| Suma y resta solo | Sube `FOTOGRAMAS_COGER` y `FOTOGRAMAS_SOLTAR` |
+| Usar un vídeo grabado en vez de la webcam | `CAMARA = "demo.mp4"` |
+
+Para probar la lógica sin cámara: `python -m unittest test_interaccion`.
 
 ## API
 
