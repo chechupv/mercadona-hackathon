@@ -129,6 +129,7 @@ class InteraccionesTests(unittest.TestCase):
         eventos += self.fotogramas(80, [PERSONA_2], [en_su_sitio])  # la 1 se va
         self.assertEqual(eventos, [COGER, regalo(1, 2), DEVOLVER])
 
+<<<<<<< HEAD
     def test_levantarla_muy_despacio_y_que_yolo_la_pierda_tambien_cuenta(self) -> None:
         # Como en botellaIntercambioDevolucion.mp4: la sube menos de 1 px por fotograma y luego deja de verse
         en_su_sitio = botella(400, 330)
@@ -140,6 +141,8 @@ class InteraccionesTests(unittest.TestCase):
         eventos += self.fotogramas(40, [mano_al_lado], [])
         self.assertEqual(eventos, [COGER])
 
+=======
+>>>>>>> ramaChech
     def test_si_la_tapan_a_medias_al_pasar_por_delante_no_cuenta(self) -> None:
         en_su_sitio = botella(400, 330)  # 80 px de alto
         mano_al_lado = Persona(1, (200, 100, 400, 500), [(380, 320)])
