@@ -1,3 +1,26 @@
 spring:
   application:
     name: backend
+
+  # H2 en archivo: no hay que instalar nada y los datos se mantienen entre reinicios.
+  # Para empezar de cero, borra la carpeta data/ con el backend parado.
+  datasource:
+    url: jdbc:h2:file:./data/mercadona
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: update        # Crea y actualiza las tablas a partir de las entidades
+    defer-datasource-initialization: true   # Ejecuta data.sql después de crear las tablas
+    open-in-view: false
+
+  sql:
+    init:
+      mode: always            # Carga data.sql (el catálogo) en cada arranque
+
+  # Consola web para ver las tablas: http://localhost:8080/h2-console
+  # JDBC URL: jdbc:h2:file:./data/mercadona  ·  Usuario: sa  ·  Sin contraseña
+  h2:
+    console:
+      enabled: true

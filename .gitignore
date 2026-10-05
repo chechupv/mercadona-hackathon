@@ -3,6 +3,10 @@
 .env.*
 !.env.example
 
+# Base de datos H2 local
+*.mv.db
+*.trace.db
+
 # IDEs
 .idea/
 .vscode/
