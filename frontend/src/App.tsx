@@ -1,5 +1,6 @@
 import './AppStyles.css'
 import { useState } from 'react'
+import AnalizarVideoCard from './components/AnalizarVideoCard'
 import CarritoCard from './components/CarritoCard'
 import ListaActividad from './components/ListaActividad'
 import TicketCard from './components/TicketCard'
@@ -116,8 +117,10 @@ function App() {
         <section className="intro">
           <div className="eyebrow"><span /> TU COMPRA, MÁS FÁCIL</div>
           <h1>¿Qué hay en<br /><span>tu cesta?</span></h1>
-          <p className="intro-copy">Coge un producto delante de la cámara y aparecerá en tu cesta al momento. Sin escanear y sin pasar por caja.</p>
+          <p className="intro-copy">Sube un vídeo de la tienda: cada producto que alguien coja aparecerá en su cesta al momento. Sin escanear y sin pasar por caja.</p>
         </section>
+
+        <AnalizarVideoCard />
 
         <section className="workspace" aria-label="Cestas en directo">
           <div className="upload-card">

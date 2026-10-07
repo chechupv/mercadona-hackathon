@@ -73,9 +73,9 @@ class CarritoApiTests {
 
     @Test
     void erroresDevuelven400o404() throws Exception {
-        evento(1, "banana", "COGER")
+        evento(1, "laptop", "COGER")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("Producto desconocido: banana"));
+                .andExpect(jsonPath("$.detail").value("Producto desconocido: laptop"));
 
         mvc.perform(post("/api/eventos").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"producto\":\"\",\"accion\":\"COGER\"}"))

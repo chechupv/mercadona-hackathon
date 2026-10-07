@@ -11,7 +11,9 @@ COPY . .
 # Vite mete esta URL en el JavaScript al compilar. Es la dirección del backend
 # vista desde el navegador (tu ordenador), no desde dentro de Docker.
 ARG VITE_API_URL=http://localhost:8080
+ARG VITE_VISION_URL=http://localhost:8000
 ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_VISION_URL=$VITE_VISION_URL
 RUN npm run build
 
 # --- 2. Servir los archivos estáticos con nginx ---

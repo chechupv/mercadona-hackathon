@@ -12,7 +12,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
-/** Historial: cada COGER o DEVOLVER que llega desde la visión. */
+/** Historial: cada COGER, DEVOLVER o REGALAR que llega desde la visión. */
 @Entity
 public class Evento {
 
@@ -30,17 +30,25 @@ public class Evento {
     @Column(nullable = false)
     private Accion accion;
 
+    /** Solo en REGALAR: quien recibe el producto. */
+    private Long receptorId;
+
     @Column(nullable = false)
     private Instant fecha;
 
     protected Evento() {
     }
 
-    public Evento(Long personaId, String producto, Accion accion) {
+    public Evento(Long personaId, String producto, Accion accion, Long receptorId) {
         this.personaId = personaId;
         this.producto = producto;
         this.accion = accion;
+        this.receptorId = receptorId;
         this.fecha = Instant.now();
+    }
+
+    public Long getReceptorId() {
+        return receptorId;
     }
 
     public Long getId() {

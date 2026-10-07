@@ -2,4 +2,8 @@ venv/
 .venv/
 __pycache__/
 *.pt
+*.mp4
+*.mov
+*.avi
+*.mkv
 referencias/vista_previa.jpg

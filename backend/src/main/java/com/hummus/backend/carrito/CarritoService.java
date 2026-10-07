@@ -69,6 +69,12 @@ public class CarritoService {
         return lineas.isEmpty() ? Optional.empty() : Optional.of(toResponse(personaId, lineas));
     }
 
+    /** El carrito de una persona; vacío si no lleva nada. */
+    @Transactional(readOnly = true)
+    public CarritoResponse obtener(Long personaId) {
+        return toResponse(personaId, lineaRepository.findByPersonaIdOrderByIdAsc(personaId));
+    }
+
     /** Se usa al finalizar la compra: el carrito pasa a ser un ticket. */
     public void vaciar(Long personaId) {
         lineaRepository.deleteByPersonaId(personaId);

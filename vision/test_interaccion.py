@@ -18,12 +18,20 @@ def botella(x: float, y: float) -> Producto:
     return Producto("bottle", (x - 15, y - 40, x + 15, y + 40), 0.8)
 
 
+PERSONA_3 = Persona(3, (1000, 100, 1200, 500), [(1100, 300)])
+
 EN_MANO_1 = botella(310, 310)
+EN_MANO_2 = botella(710, 310)
+EN_MANO_3 = botella(1110, 310)
 EN_LA_MESA = botella(500, 450)
 OTRA_EN_LA_MESA = botella(550, 450)
 
 COGER = Evento(1, "bottle", "COGER")
 DEVOLVER = Evento(1, "bottle", "DEVOLVER")
+
+
+def regalo(de: int, a: int) -> Evento:
+    return Evento(de, "bottle", "REGALAR", receptor_id=a)
 
 
 class InteraccionesTests(unittest.TestCase):
@@ -71,6 +79,97 @@ class InteraccionesTests(unittest.TestCase):
     def test_la_botella_es_de_la_persona_con_la_muneca_mas_cerca(self) -> None:
         eventos = self.fotogramas(8, [PERSONA_1, PERSONA_2], [botella(690, 310)])
         self.assertEqual(eventos, [Evento(2, "bottle", "COGER")])
+
+    def test_un_producto_que_sigue_en_su_sitio_no_esta_en_la_mano(self) -> None:
+        # La botella está en la mesa; llega alguien y deja la muñeca justo al lado
+        # (p. ej. al alargar el brazo para coger la de al lado)
+        al_lado = botella(320, 320)
+        self.fotogramas(10, [], [al_lado])
+        self.assertEqual(self.fotogramas(40, [PERSONA_1], [al_lado]), [])
+
+    def test_levantarlo_poco_a_poco_si_cuenta(self) -> None:
+        # Está en la mesa, llega alguien, pone la mano al lado y la levanta despacio (3 px por fotograma)
+        self.fotogramas(10, [], [botella(320, 330)])
+        self.assertEqual(self.fotogramas(10, [PERSONA_1], [botella(320, 330)]), [])
+        eventos = []
+        for paso in range(1, 40):
+            mano = Persona(1, (200, 100, 400, 500), [(310, 320 - 3 * paso)])
+            eventos += self.fotogramas(1, [mano], [botella(320, 330 - 3 * paso)])
+        self.assertEqual(eventos, [COGER])
+
+    def test_si_yolo_la_pierde_al_cogerla_cuenta_igual_y_al_dejarla_resta(self) -> None:
+        en_su_sitio = botella(400, 330)
+        mano_al_lado = Persona(1, (200, 100, 400, 500), [(380, 320)])
+        self.fotogramas(10, [], [en_su_sitio])
+        self.fotogramas(10, [mano_al_lado], [en_su_sitio])
+        # Empieza a levantarla (se mueve 4 px por fotograma, aún cerca de su sitio)...
+        for paso in range(1, 7):
+            self.fotogramas(1, [mano_al_lado], [botella(400 - 4 * paso, 330 - 2 * paso)])
+        # ...y YOLO deja de verla porque la gira para mirarla
+        eventos = self.fotogramas(40, [mano_al_lado], [])
+        self.assertEqual(eventos, [COGER])
+
+        # La vuelve a dejar en su sitio y aparta la mano
+        mano_lejos = Persona(1, (200, 100, 400, 500), [(250, 250)])
+        self.assertEqual(self.fotogramas(30, [mano_lejos], [en_su_sitio]), [DEVOLVER])
+
+    def test_si_yolo_la_pierde_al_cogerla_y_luego_la_regala_no_vuelve_a_sumar(self) -> None:
+        # Como en botellaIntercambioDevolucion2.mp4: la 1 la coge (YOLO la pierde un momento),
+        # se la da a la 2 y la 2 la deja en la mesa. Solo debe haber COGER, REGALAR y DEVOLVER.
+        en_su_sitio = botella(400, 330)
+        mano_1 = Persona(1, (200, 100, 400, 500), [(380, 320)])
+        dos = [mano_1, PERSONA_2]
+        eventos = self.fotogramas(10, [PERSONA_2], [en_su_sitio])
+        eventos += self.fotogramas(10, dos, [en_su_sitio])
+        for paso in range(1, 7):
+            eventos += self.fotogramas(1, dos, [botella(400 - 4 * paso, 330 - 2 * paso)])
+        eventos += self.fotogramas(20, dos, [])               # la 1 la tiene, pero YOLO no la ve
+        eventos += self.fotogramas(30, dos, [EN_MANO_2])      # se la da a la 2
+        eventos += self.fotogramas(30, dos, [en_su_sitio])    # la 2 la deja en la mesa
+        eventos += self.fotogramas(80, [PERSONA_2], [en_su_sitio])  # la 1 se va
+        self.assertEqual(eventos, [COGER, regalo(1, 2), DEVOLVER])
+
+    def test_levantarla_muy_despacio_y_que_yolo_la_pierda_tambien_cuenta(self) -> None:
+        # Como en botellaIntercambioDevolucion.mp4: la sube menos de 1 px por fotograma y luego deja de verse
+        en_su_sitio = botella(400, 330)
+        mano_al_lado = Persona(1, (200, 100, 400, 500), [(380, 320)])
+        self.fotogramas(10, [], [en_su_sitio])
+        eventos = self.fotogramas(10, [mano_al_lado], [en_su_sitio])
+        for paso in range(1, 41):
+            eventos += self.fotogramas(1, [mano_al_lado], [botella(400, 330 - 0.8 * paso)])
+        eventos += self.fotogramas(40, [mano_al_lado], [])
+        self.assertEqual(eventos, [COGER])
+
+    def test_si_se_mueve_la_camara_y_la_tapan_no_cuenta(self) -> None:
+        # Como la cantimplora de dosPersonasDiferentesObjetos.mp4: la cámara se desplaza poco a poco
+        # (todas las botellas de la mesa se mueven igual en la imagen) y alguien tapa una un momento
+        mano_al_lado = Persona(1, (200, 100, 400, 500), [(380, 320)])
+        eventos = self.fotogramas(10, [], [botella(400, 330), botella(550, 330)])
+        for paso in range(1, 61):  # 0.8 px por fotograma: en 40 fotogramas, 32 px
+            eventos += self.fotogramas(1, [mano_al_lado], [botella(400 - 0.8 * paso, 330), botella(550 - 0.8 * paso, 330)])
+        eventos += self.fotogramas(40, [mano_al_lado], [botella(502, 330)])  # la de la izquierda queda tapada
+        self.assertEqual(eventos, [])
+
+    def test_si_la_tapan_a_medias_al_pasar_por_delante_no_cuenta(self) -> None:
+        en_su_sitio = botella(400, 330)  # 80 px de alto
+        mano_al_lado = Persona(1, (200, 100, 400, 500), [(380, 320)])
+        self.fotogramas(10, [], [en_su_sitio])
+        self.fotogramas(10, [mano_al_lado], [en_su_sitio])
+        # El cuerpo tapa la mitad de abajo: el recuadro encoge y su centro sube (parece que se mueve)
+        for _ in range(6):
+            self.fotogramas(1, [mano_al_lado], [Producto("bottle", (385, 290, 415, 320), 0.5)])
+        eventos = self.fotogramas(40, [mano_al_lado], [])
+        eventos += self.fotogramas(20, [mano_al_lado], [en_su_sitio])
+        self.assertEqual(eventos, [])
+
+    def test_si_solo_la_tapan_sin_moverla_no_cuenta(self) -> None:
+        en_su_sitio = botella(400, 330)
+        mano_al_lado = Persona(1, (200, 100, 400, 500), [(380, 320)])
+        self.fotogramas(10, [], [en_su_sitio])
+        self.fotogramas(10, [mano_al_lado], [en_su_sitio])
+        eventos = self.fotogramas(40, [mano_al_lado], [])  # el cuerpo la tapa
+        eventos += self.fotogramas(20, [mano_al_lado], [en_su_sitio])
+        self.assertEqual(eventos, [])
 
     # --- Dejarla en la mesa: resta ---
 
@@ -123,6 +222,52 @@ class InteraccionesTests(unittest.TestCase):
         self.fotogramas(6, [dos_manos], [EN_LA_MESA])
         resultado = self.sale_del_plano([EN_LA_MESA])
         self.assertEqual(resultado.eventos, [DEVOLVER])
+
+    # --- Regalos (paga quien lo coge de la estantería, como en Amazon Go) ---
+
+    def coger_de_la_mesa_y_darselo_a_la_2(self) -> list[Evento]:
+        dos = [PERSONA_1, PERSONA_2]
+        eventos = self.fotogramas(10, dos, [EN_LA_MESA])
+        eventos += self.fotogramas(8, dos, [EN_MANO_1])   # la 1 la coge de la mesa
+        eventos += self.fotogramas(8, dos, [EN_MANO_2])   # se la da a la 2
+        return eventos
+
+    def test_darle_el_producto_a_otra_persona_es_un_regalo(self) -> None:
+        # La 1 paga (COGER); la 2 lo recibe sin pagar (REGALAR, sin COGER para la 2)
+        self.assertEqual(self.coger_de_la_mesa_y_darselo_a_la_2(), [COGER, regalo(1, 2)])
+
+    def test_si_quien_lo_recibe_se_lo_lleva_lo_sigue_pagando_quien_lo_cogio(self) -> None:
+        self.coger_de_la_mesa_y_darselo_a_la_2()
+        eventos = self.fotogramas(20, [PERSONA_1, PERSONA_2], [EN_MANO_2])
+        eventos += self.fotogramas(80, [PERSONA_1], [])  # la 2 sale del plano con el regalo
+        self.assertEqual(eventos, [])  # ningún DEVOLVER: la 1 lo sigue pagando
+
+    def test_si_quien_lo_recibe_lo_deja_en_la_mesa_se_resta_a_quien_lo_pagaba(self) -> None:
+        self.coger_de_la_mesa_y_darselo_a_la_2()
+        eventos = self.fotogramas(30, [PERSONA_1, PERSONA_2], [EN_LA_MESA])
+        self.assertEqual(eventos, [DEVOLVER])  # se resta a la persona 1, no a la 2
+
+    def test_si_se_lo_devuelve_ya_no_es_un_regalo(self) -> None:
+        dos = [PERSONA_1, PERSONA_2]
+        self.coger_de_la_mesa_y_darselo_a_la_2()
+        self.assertEqual(self.fotogramas(8, dos, [EN_MANO_1]), [regalo(2, 1)])
+        # Ahora la tiene quien la paga: si la deja en la mesa, se le resta a ella
+        self.assertEqual(self.fotogramas(30, dos, [EN_LA_MESA]), [DEVOLVER])
+
+    def test_un_regalo_de_un_regalo_lo_sigue_pagando_el_primero(self) -> None:
+        tres = [PERSONA_1, PERSONA_2, PERSONA_3]
+        eventos = self.fotogramas(10, tres, [EN_LA_MESA])
+        eventos += self.fotogramas(8, tres, [EN_MANO_1])
+        eventos += self.fotogramas(8, tres, [EN_MANO_2])
+        eventos += self.fotogramas(8, tres, [EN_MANO_3])
+        eventos += self.fotogramas(30, tres, [EN_LA_MESA])  # la 3 la deja en la mesa
+        self.assertEqual(eventos, [COGER, regalo(1, 2), regalo(2, 3), DEVOLVER])
+
+    def test_cada_uno_paga_lo_que_coge_de_la_mesa(self) -> None:
+        dos = [PERSONA_1, PERSONA_2]
+        eventos = self.fotogramas(10, dos, [EN_LA_MESA, OTRA_EN_LA_MESA])
+        eventos += self.fotogramas(10, dos, [EN_MANO_1, EN_MANO_2])  # cada una coge una
+        self.assertEqual(sorted(eventos, key=lambda e: e.persona_id), [COGER, Evento(2, "bottle", "COGER")])
 
     # --- Salida ---
 

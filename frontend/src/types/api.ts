@@ -15,14 +15,17 @@ export interface Carrito {
   total: number
 }
 
-export type Accion = 'COGER' | 'DEVOLVER'
+export type Accion = 'COGER' | 'DEVOLVER' | 'REGALAR'
 
 export interface Evento {
   id: number
+  /** En COGER y DEVOLVER, quien paga; en REGALAR, quien da el producto */
   personaId: number
   producto: string
   nombre: string
   accion: Accion
+  /** Solo en REGALAR: quien recibe el producto */
+  receptorId: number | null
   fecha: string
 }
 

@@ -1,3 +1,12 @@
 ultralytics>=8.3
 lap>=0.5.12        # la necesita el tracker BoT-SORT
 requests>=2.31
+
+# servidor.py (subir vídeos desde la web)
+fastapi>=0.110
+uvicorn>=0.29
+python-multipart>=0.0.9
+
+# Solo si usas YOLO-World (MODELO_OBJETOS = "yolov8s-worldv2.pt"). Si no lo instalas,
+# ultralytics lo instala solo la primera vez (necesita git e internet):
+# clip @ git+https://github.com/ultralytics/CLIP.git
