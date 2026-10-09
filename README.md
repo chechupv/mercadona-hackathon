@@ -1,4 +1,4 @@
-# Mercadona Just Walk Out
+# MercaFlow
 
 Demo de carrito automático: una cámara detecta a la persona y la botella, y cada vez que la coge o la devuelve el carrito suma o resta en tiempo real.
 
